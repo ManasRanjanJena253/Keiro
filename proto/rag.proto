@@ -1,0 +1,102 @@
+syntax="proto3";
+
+package keiro.v1;
+
+option go_package = "github.com/ManasRanjanJena253/Keiro/generated/go;rag";
+enum QueryType{
+  QUERY_TYPE_UNSPECIFIED = 0;
+  SIMPLE = 1;
+  MULTI_HOP = 2;
+  COMPLEX = 3;
+}
+
+enum RetrievalType{
+  RETRIEVAL_TYPE_UNSPECIFIED = 0;
+  HYBRID = 1;
+  SELF_QUERYING = 2;
+  MULTI_VECTOR = 3;
+}
+
+enum ChunkingStrategy{
+  DEFAULT = 0;
+  FIXED_SIZE = 1;
+  STRUCTURAL = 2;
+  SEMANTIC = 3;
+}
+
+message RetrievedChunk{
+  string text = 1;
+  map <string, string> metadata = 2;
+  float similarity_score = 3;
+  string source_id = 4;
+}
+
+message RetrievalConfig{
+  RetrievalType retrieval_type = 1;
+  int32 top_k = 2;
+  bool rerank = 3;
+  bool decompose = 4;
+}
+
+message ComputeEmbeddingRequest{
+  string user_query = 1;
+}
+
+message ComputeEmbeddingResponse{
+  repeated float vector_embeddings = 1 [packed = true];
+}
+
+message ClassifyQueryRequest{
+  string user_query = 1;
+  string namespace = 2;
+}
+
+message ClassifyQueryResponse{
+  QueryType query_type = 1;
+  RetrievalConfig config = 2;
+}
+
+message ExecuteRetrievalRequest{
+  string user_query = 1;
+  RetrievalConfig received_config = 2;
+  string namespace = 3;
+}
+
+message ExecuteRetrievalResponse{
+  repeated RetrievedChunk retrieved_chunk = 1;
+  bool retrieval_status = 2;
+}
+
+message GenerateResponseRequest{
+  string namespace = 1;
+  string user_query = 2;
+  repeated RetrievedChunk retrieved_chunk = 3;
+
+}
+message GeneratedResponse{
+  string response = 1;
+  int32 prompt_tokens = 2;
+  int32 completion_tokens = 3;
+  string model = 4;
+}
+
+message IngestDocumentRequest{
+  bytes doc_content = 1;
+  string namespace = 2;
+  string filename = 3;
+  string mime_type = 4;    // The type of file we are getting i.e. audio, image, text e.t.c.
+  ChunkingStrategy chunking_strategy = 5;     // To be specified by user.
+}
+
+message IngestDocumentResponse{
+  bool embedding_status = 1;
+  int64 chunk_count = 2;
+}
+
+service IntelligenceService{
+  rpc ComputeEmbeddings(ComputeEmbeddingRequest) returns (ComputeEmbeddingResponse){}
+  rpc ClassifyQueryType(ClassifyQueryRequest) returns (ClassifyQueryResponse){}
+  rpc IngestDocument(IngestDocumentRequest) returns (IngestDocumentResponse){}
+  rpc ExecuteRetrieval(ExecuteRetrievalRequest) returns (ExecuteRetrievalResponse){}
+  rpc GenerateResponse(GenerateResponseRequest) returns (GeneratedResponse){}
+}

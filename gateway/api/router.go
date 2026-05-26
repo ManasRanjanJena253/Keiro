@@ -1,13 +1,14 @@
 package api
 
 import (
+	"Keiro/gateway/config"
 	"Keiro/gateway/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
 
-func NewRouter() *chi.Mux {
+func NewRouter(envVar *config.Config) *chi.Mux {
 	mainRouter := chi.NewRouter()
 
 	mainRouter.Use(cors.Handler(cors.Options{
@@ -19,7 +20,7 @@ func NewRouter() *chi.Mux {
 
 	mainRouter.Use(middleware.Logging)
 	mainRouter.Use(middleware.Tracing)
-	mainRouter.Use(middleware.Auth)
+	mainRouter.Use(middleware.Auth(envVar))
 	mainRouter.Use(middleware.Namespace)
 	mainRouter.Use(middleware.RateLimit)
 

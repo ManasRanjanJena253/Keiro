@@ -1,24 +1,37 @@
 package intelligence
 
 import (
+	"Keiro/gateway/config"
 	pb "Keiro/generated/go/proto"
 	"context"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func ConnectToPython() pb.IntelligenceServiceClient {
-	conn, err := grpc.NewClient("localhost:28080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+func ConnectToPython() (pb.IntelligenceServiceClient, error) {
+	envVar, err := config.LoadEnv()
+
+	if err != nil {
+		slog.Info("Couldn't Load env variables", "ERROR", err)
+		return nil, err
+	}
+	host := envVar.Intelligence.Host
+	port := envVar.Intelligence.Port
+
+	target := host + ":" + strconv.Itoa(port)
+
+	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
 		slog.Info("Couldn't establish connection with python server", "ERROR", err)
 	}
 
 	client := pb.NewIntelligenceServiceClient(conn)
-	return client
+	return client, nil
 }
 
 func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace string) {

@@ -1,0 +1,28 @@
+services:
+  intelligence:
+    build:
+      context: .
+      dockerfile: docker/intelligence.Dockerfile
+    ports:
+      - "${INTELLIGENCE_PORT:-28080}:28080"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import grpc; grpc.channel_ready_future(grpc.insecure_channel('localhost:28080')).result(timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - PYTHON_INTELLIGENCE_ADDR=intelligence:28080
+    depends_on:
+      intelligence:
+        condition: service_healthy

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 
@@ -11,12 +11,12 @@ import (
 type Config struct {
 	Gateway struct {
 		Host string
-		Port int
+		Port string
 	}
 
 	Intelligence struct {
 		Host string
-		Port int
+		Port string
 	}
 
 	Auth string
@@ -38,16 +38,16 @@ func LoadEnv() (*Config, error) {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatalf("Unable to locate .env : %v", err)
+		slog.Info("Couldn't initialize godotenv. Skipping loading.......")
 	}
 
 	var config Config
 
 	config.Gateway.Host = os.Getenv("GATEWAY_HOST")
-	config.Gateway.Port, _ = strconv.Atoi(os.Getenv("GATEWAY_PORT"))
+	config.Gateway.Port = os.Getenv("GATEWAY_PORT")
 
 	config.Intelligence.Host = os.Getenv("INTELLIGENCE_HOST")
-	config.Intelligence.Port, _ = strconv.Atoi(os.Getenv("INTELLIGENCE_PORT"))
+	config.Intelligence.Port = os.Getenv("INTELLIGENCE_PORT")
 
 	config.Auth = os.Getenv("KEIRO_SECRET")
 	config.APIs.GEMINI = os.Getenv("GEMINI_API_KEY")

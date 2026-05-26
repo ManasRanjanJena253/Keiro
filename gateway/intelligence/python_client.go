@@ -5,29 +5,24 @@ import (
 	pb "Keiro/generated/go/proto"
 	"context"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func ConnectToPython() (pb.IntelligenceServiceClient, error) {
-	envVar, err := config.LoadEnv()
+func ConnectToPython(envVar *config.Config) (pb.IntelligenceServiceClient, error) {
 
-	if err != nil {
-		slog.Info("Couldn't Load env variables", "ERROR", err)
-		return nil, err
-	}
 	host := envVar.Intelligence.Host
 	port := envVar.Intelligence.Port
 
-	target := host + ":" + strconv.Itoa(port)
+	target := host + ":" + port
 
 	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
-		slog.Info("Couldn't establish connection with python server", "ERROR", err)
+		slog.Error("Couldn't establish connection with python server", "ERROR", err)
+		return nil, err
 	}
 
 	client := pb.NewIntelligenceServiceClient(conn)
@@ -44,7 +39,7 @@ func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace 
 	}
 	res, err := client.ClassifyQueryType(ctx, req)
 	if err != nil {
-		slog.Info("Couldn't classify Query", "ERROR", err)
+		slog.Error("Couldn't classify Query", "ERROR", err)
 		return
 	}
 
@@ -65,7 +60,7 @@ func ComputeEmbeddings(client pb.IntelligenceServiceClient, query string) {
 
 	res, err := client.ComputeEmbeddings(ctx, req)
 	if err != nil {
-		slog.Info("Couldn't Compute Embeddings", "ERROR", err)
+		slog.Error("Couldn't Compute Embeddings", "ERROR", err)
 		return
 	}
 
@@ -87,7 +82,7 @@ func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config 
 
 	res, err := client.ExecuteRetrieval(ctx, req)
 	if err != nil {
-		slog.Info("Couldn't connect to ExecuteRetrieval", "ERROR", err)
+		slog.Error("Couldn't connect to ExecuteRetrieval", "ERROR", err)
 		return
 	}
 
@@ -109,7 +104,7 @@ func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, que
 
 	res, err := client.GenerateResponse(ctx, req)
 	if err != nil {
-		slog.Info("Couldn't connect to GenerateResponse", "ERROR", err)
+		slog.Error("Couldn't connect to GenerateResponse", "ERROR", err)
 		return
 	}
 
@@ -136,7 +131,7 @@ func IngestDocument(client pb.IntelligenceServiceClient, mime_type string, chunk
 
 	res, err := client.IngestDocument(ctx, req)
 	if err != nil {
-		slog.Info("Couldn't connect to IngestDocument", "ERROR", err)
+		slog.Error("Couldn't connect to IngestDocument", "ERROR", err)
 		return
 	}
 

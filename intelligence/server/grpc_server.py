@@ -1,5 +1,6 @@
 import sys
 import os
+from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../generated/python"))
 
@@ -32,11 +33,17 @@ class ComputeEmbeddings(rag_pb2_grpc.IntelligenceServiceServicer):
     def IngestDocument(self, request, context):
         return super().IngestDocument(request = request, context = context)
 
+
+
+load_dotenv()
+
 def serve():
+    PORT = os.getenv("INTELLIGENCE_PORT")
+    HOST = "0.0.0.0"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers = 10))
     rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(ComputeEmbeddings(), server)
-    server.add_insecure_port("localhost:28080")
-    print("Starting the server at port localhost:28080")
+    server.add_insecure_port(f"{HOST}:{PORT}")
+    print(f"Starting the server at port {HOST}:{PORT}")
     server.start()
     server.wait_for_termination()
 

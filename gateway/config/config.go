@@ -39,7 +39,7 @@ func LoadEnv() (*Config, error) {
 	err := godotenv.Load()
 
 	if err != nil {
-		slog.Info("Couldn't initialize godotenv. Skipping loading.......")
+		slog.Info("Couldn't initialize godotenv. Skipping loading.......", err)
 	}
 
 	var config Config

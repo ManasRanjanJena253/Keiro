@@ -1,15 +1,18 @@
 package main
 
 import (
+	"Keiro/gateway/api"
 	config "Keiro/gateway/config"
 	"Keiro/gateway/intelligence"
 	"log"
 	"log/slog"
+	"net/http"
 )
 
 func main() {
-	// mainRouter := api.NewRouter()
+
 	envVar, err := config.LoadEnv()
+	mainRouter := api.NewRouter(envVar)
 
 	if err != nil {
 		slog.Error("Unable to load env",
@@ -27,6 +30,19 @@ func main() {
 	log.Println("Initiating call to ClassifyQuery.....")
 	intelligence.ClassifyQuery(client, "Hello", "test")
 
-	log.Println("Test complete.")
+	//log.Println("Test complete.")
 
+	port := "7000"
+	log.Println("Port", port)
+
+	serve := &http.Server{
+		Handler: mainRouter,
+		Addr:    ":" + port,
+	}
+	slog.Info("Server started", "PORT", serve.Addr)
+	servErr := serve.ListenAndServe()
+
+	if servErr != nil {
+		slog.Error("Server stopped", "ERROR", servErr)
+	}
 }

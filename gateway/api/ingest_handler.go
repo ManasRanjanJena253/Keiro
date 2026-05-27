@@ -1,7 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"Keiro/gateway/httpWriter"
+	"net/http"
+)
 
 func IngestHandler(w http.ResponseWriter, r *http.Request) {
-	RespondWithJSON(w, 501, struct{}{})
+	httpWriter.RespondWithJSON(w, 501, struct{}{})
 }

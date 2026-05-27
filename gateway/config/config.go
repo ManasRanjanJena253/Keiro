@@ -31,7 +31,8 @@ type Config struct {
 		SimilarityThreshold float64
 	}
 
-	RateLimit int
+	RateLimit  int
+	BurstLimit int
 }
 
 func LoadEnv() (*Config, error) {
@@ -57,6 +58,7 @@ func LoadEnv() (*Config, error) {
 	config.Cache.SimilarityThreshold, _ = strconv.ParseFloat(os.Getenv("KEIRO_CACHE_SIMILARITY_THRESHOLD"), 64)
 
 	config.RateLimit, _ = strconv.Atoi(os.Getenv("KEIRO_RATE_LIMIT"))
+	config.BurstLimit, _ = strconv.Atoi(os.Getenv("KEIRO_BURST_LIMIT"))
 
 	return &config, nil
 }

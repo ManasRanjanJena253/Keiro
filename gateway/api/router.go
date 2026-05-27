@@ -22,7 +22,7 @@ func NewRouter(envVar *config.Config) *chi.Mux {
 	mainRouter.Use(middleware.Tracing)
 	mainRouter.Use(middleware.Auth(envVar))
 	mainRouter.Use(middleware.Namespace)
-	mainRouter.Use(middleware.RateLimit)
+	mainRouter.Use(middleware.RateLimit(envVar))
 
 	v1Router := chi.NewRouter()
 

@@ -126,3 +126,5 @@ benchmarks/results/*.csv
 .DS_Store
 Thumbs.db
 desktop.ini
+
+gateway/tests.http

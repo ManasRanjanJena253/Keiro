@@ -34,3 +34,12 @@ func (embedCache *EmbeddingCache) Get(key string) ([]float32, bool) {
 	}
 	return vec, true
 }
+
+func (embedCache *EmbeddingCache) GetKeys() []string {
+	keys := []string{}
+
+	for _, key := range embedCache.lruStore.cache.Keys() {
+		keys = append(keys, key)
+	}
+	return keys
+}

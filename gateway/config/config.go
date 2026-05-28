@@ -55,7 +55,7 @@ func LoadEnv() (*Config, error) {
 	config.APIs.OPENAI = os.Getenv("OPENAI_API_KEY")
 	config.Cache.MaxSize, _ = strconv.Atoi(os.Getenv("KEIRO_CACHE_MAX_SIZE"))
 	config.Cache.TTL, _ = strconv.Atoi(os.Getenv("KEIRO_CACHE_TTL"))
-	config.Cache.SimilarityThreshold, _ = strconv.ParseFloat(os.Getenv("KEIRO_CACHE_SIMILARITY_THRESHOLD"), 64)
+	config.Cache.SimilarityThreshold, _ = strconv.ParseFloat(os.Getenv("KEIRO_CACHE_SIMILARITY_THRESHOLD"), 32)
 
 	config.RateLimit, _ = strconv.Atoi(os.Getenv("KEIRO_RATE_LIMIT"))
 	config.BurstLimit, _ = strconv.Atoi(os.Getenv("KEIRO_BURST_LIMIT"))

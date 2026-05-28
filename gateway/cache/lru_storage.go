@@ -12,7 +12,7 @@ type LRUStore struct {
 	cache    *expirable.LRU[string, any]
 }
 
-func New(capacity, TTL int) *LRUStore {
+func NewLRU(capacity, TTL int) *LRUStore {
 	cache := expirable.NewLRU[string, any](capacity, nil, time.Duration(TTL)*time.Second)
 	return &LRUStore{
 		ttl:      TTL,

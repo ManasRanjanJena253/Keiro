@@ -18,6 +18,8 @@ func NewRouter(envVar *config.Config) *chi.Mux {
 		MaxAge:           500,
 	}))
 
+	queryHandler := NewQueryHandler()
+
 	mainRouter.Use(middleware.Logging)
 	mainRouter.Use(middleware.Tracing)
 	mainRouter.Use(middleware.Auth(envVar))

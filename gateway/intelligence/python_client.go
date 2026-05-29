@@ -29,7 +29,7 @@ func ConnectToPython(envVar *config.Config) (pb.IntelligenceServiceClient, error
 	return client, nil
 }
 
-func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace string) {
+func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace string) (*pb.ClassifyQueryResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -40,17 +40,13 @@ func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace 
 	res, err := client.ClassifyQueryType(ctx, req)
 	if err != nil {
 		slog.Error("Couldn't classify Query", "ERROR", err)
-		return
+		return nil, err
 	}
 
-	slog.Info(
-		"Response Received",
-		"Query Type", res.QueryType,
-		"Retrieval Config", res.Config,
-	)
+	return res, nil
 }
 
-func ComputeEmbeddings(client pb.IntelligenceServiceClient, query string) {
+func ComputeEmbeddings(client pb.IntelligenceServiceClient, query string) ([]float32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -61,16 +57,13 @@ func ComputeEmbeddings(client pb.IntelligenceServiceClient, query string) {
 	res, err := client.ComputeEmbeddings(ctx, req)
 	if err != nil {
 		slog.Error("Couldn't Compute Embeddings", "ERROR", err)
-		return
+		return nil, err
 	}
 
-	slog.Info(
-		"Response Received",
-		"Received Embeddings", res.VectorEmbeddings,
-	)
+	return res.VectorEmbeddings, nil
 }
 
-func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config *pb.RetrievalConfig, namespace string) {
+func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config *pb.RetrievalConfig, namespace string) (*pb.ExecuteRetrievalResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -83,16 +76,13 @@ func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config 
 	res, err := client.ExecuteRetrieval(ctx, req)
 	if err != nil {
 		slog.Error("Couldn't connect to ExecuteRetrieval", "ERROR", err)
-		return
+		return nil, err
 	}
 
-	slog.Info(
-		"ExecuteRetrieval Response",
-		"Retrieved Chunk", res.RetrievedChunk,
-		"Retrieval Status", res.RetrievalStatus)
+	return res, nil
 }
 
-func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, query string, retrieved_chunk []*pb.RetrievedChunk) {
+func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, query string, retrieved_chunk []*pb.RetrievedChunk) (*pb.GeneratedResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -105,16 +95,10 @@ func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, que
 	res, err := client.GenerateResponse(ctx, req)
 	if err != nil {
 		slog.Error("Couldn't connect to GenerateResponse", "ERROR", err)
-		return
+		return nil, err
 	}
 
-	slog.Info(
-		"Response Generated Successfully",
-		"Response", res.Response,
-		"Prompt Tokens", res.PromptTokens,
-		"Completion Tokens", res.CompletionTokens,
-		"Model", res.Model,
-	)
+	return res, nil
 }
 
 func IngestDocument(client pb.IntelligenceServiceClient, mime_type string, chunking_strat int32, namespace string, filename string, content []byte) {

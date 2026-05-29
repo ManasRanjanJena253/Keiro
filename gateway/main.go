@@ -4,45 +4,81 @@ import (
 	"Keiro/gateway/api"
 	config "Keiro/gateway/config"
 	"Keiro/gateway/intelligence"
+	"context"
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
 
-	envVar, err := config.LoadEnv()
-	mainRouter := api.NewRouter(envVar)
+	envVar, loadErr := config.LoadEnv()
 
-	if err != nil {
+	if loadErr != nil {
 		slog.Error("Unable to load env",
-			"ERROR", err)
+			"ERROR", loadErr)
+		os.Exit(1)
 	} else {
 		slog.Info("Loaded Env")
 	}
+	pythonClient, conn, intelServerErr := intelligence.ConnectToPython(envVar)
 
-	client, err := intelligence.ConnectToPython(envVar)
+	if intelServerErr != nil {
+		slog.Error("Unable to connect with the intelligence client",
+			"ERROR", intelServerErr)
+		os.Exit(1)
+	} else {
+		slog.Info("Connected with the Intelligence layer")
+	}
+	mainRouter, routingErr := api.NewRouter(envVar, pythonClient)
 
-	if err != nil {
-		slog.Error("Unable to fetch client", "ERROR", err)
+	if routingErr != nil {
+		slog.Error("Unable to get router.",
+			"ERROR", routingErr)
+		os.Exit(1)
+	} else {
+		slog.Info("Router Initialized Successfully.....")
 	}
 
-	log.Println("Initiating call to ClassifyQuery.....")
-	intelligence.ClassifyQuery(client, "Hello", "test")
+	port := envVar.Gateway.Port
+	host := envVar.Gateway.Host
+	address := host + ":" + port
+	log.Println("Host:Port ", address)
 
-	//log.Println("Test complete.")
-
-	port := "7000"
-	log.Println("Port", port)
-
-	serve := &http.Server{
+	server := &http.Server{
 		Handler: mainRouter,
-		Addr:    ":" + port,
+		Addr:    address,
 	}
-	slog.Info("Server started", "PORT", serve.Addr)
-	servErr := serve.ListenAndServe()
 
-	if servErr != nil {
-		slog.Error("Server stopped", "ERROR", servErr)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Server error", "ERROR", err)
+		}
+	}()
+
+	slog.Info("Server started", "PORT", server.Addr)
+
+	<-quit // Blocks until signal received
+
+	slog.Info("Shutting Down server......")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("Forced Shutdown", "ERROR", err)
 	}
+
+	err := conn.Close()
+	if err != nil {
+		slog.Error("Couldn't close intelligence client server", "ERROR", err)
+	}
+
+	slog.Info("Server stopped")
 }

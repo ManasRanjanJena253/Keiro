@@ -23,7 +23,7 @@ var queryReq struct {
 	Query string `json:"query"`
 }
 
-func NewQueryHandler(ttl, capacity int, client pb.IntelligenceServiceClient, simThreshold float32) (qHandler *QueryHandler) {
+func NewQueryHandler(client pb.IntelligenceServiceClient, ttl, capacity int, simThreshold float32) (qHandler *QueryHandler) {
 	cacheStore := cache.NewLRU(capacity, ttl)
 	embedCache := cache.NewEmbeddingCache(cacheStore)
 	semCache := cache.NewSemanticCache(cacheStore, embedCache, simThreshold)

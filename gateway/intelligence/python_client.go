@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func ConnectToPython(envVar *config.Config) (pb.IntelligenceServiceClient, error) {
+func ConnectToPython(envVar *config.Config) (pb.IntelligenceServiceClient, *grpc.ClientConn, error) {
 
 	host := envVar.Intelligence.Host
 	port := envVar.Intelligence.Port
@@ -22,11 +22,11 @@ func ConnectToPython(envVar *config.Config) (pb.IntelligenceServiceClient, error
 
 	if err != nil {
 		slog.Error("Couldn't establish connection with python server", "ERROR", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	client := pb.NewIntelligenceServiceClient(conn)
-	return client, nil
+	return client, conn, nil
 }
 
 func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace string) (*pb.ClassifyQueryResponse, error) {

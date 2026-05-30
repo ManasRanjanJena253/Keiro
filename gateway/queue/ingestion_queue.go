@@ -47,7 +47,11 @@ func NewIngestionQueue(ctx context.Context, tracker *JobTracker, client pb.Intel
 
 }
 
-func (queue *IngestionQueue) Enqueue(job jobChannelStruct) error {
+func (queue *IngestionQueue) Enqueue(id uuid.UUID, details *pb.IngestDocumentRequest) error {
+	job := jobChannelStruct{
+		jobId:      id,
+		jobDetails: details,
+	}
 	for {
 		select {
 		case queue.jobCh <- job:

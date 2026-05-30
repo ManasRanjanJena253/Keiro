@@ -31,8 +31,9 @@ type Config struct {
 		SimilarityThreshold float64
 	}
 
-	RateLimit  int
-	BurstLimit int
+	RateLimit   int
+	BurstLimit  int
+	MaxFileSize int
 }
 
 func LoadEnv() (*Config, error) {
@@ -59,6 +60,7 @@ func LoadEnv() (*Config, error) {
 
 	config.RateLimit, _ = strconv.Atoi(os.Getenv("KEIRO_RATE_LIMIT"))
 	config.BurstLimit, _ = strconv.Atoi(os.Getenv("KEIRO_BURST_LIMIT"))
+	config.MaxFileSize, _ = strconv.Atoi(os.Getenv("MAX_FILE_SIZE"))
 
 	return &config, nil
 }

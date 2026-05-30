@@ -60,7 +60,7 @@ func (qHandler *QueryHandler) HandleUserQuery(w http.ResponseWriter, r *http.Req
 
 		qHandler.semCache.Set(namespace.(string), query, queryEmbed, finalResponse.Response)
 
-		httpWriter.RespondWithJSON(w, 200, responseStruct{
+		httpWriter.RespondWithJSON(w, 200, queryResponseStruct{
 			Response:         finalResponse.Response,
 			PromptTokens:     finalResponse.PromptTokens,
 			CompletionToken:  finalResponse.CompletionTokens,
@@ -72,7 +72,7 @@ func (qHandler *QueryHandler) HandleUserQuery(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	httpWriter.RespondWithJSON(w, 200, responseStruct{
+	httpWriter.RespondWithJSON(w, 200, queryResponseStruct{
 		Response:         response,
 		PromptTokens:     0,
 		CompletionToken:  0,

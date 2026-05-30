@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type status int
+type Status int
 const (
 	Pending = iota
 	Processing
@@ -16,7 +16,7 @@ const (
 )
 
 type jobEntry struct {
-	jobStatus status
+	jobStatus Status
 	jobError  string
 }
 
@@ -42,7 +42,7 @@ func (tracker *JobTracker) CreateJob() (uuid.UUID, error) {
 	return id, nil
 }
 
-func (tracker *JobTracker) UpdateStatus(id uuid.UUID, stat status, errMsg string) {
+func (tracker *JobTracker) UpdateStatus(id uuid.UUID, stat Status, errMsg string) {
 	tracker.mutex.Lock()
 	defer tracker.mutex.Unlock()
 	job := tracker.jobsMap[id]

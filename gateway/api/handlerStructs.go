@@ -2,10 +2,13 @@ package api
 
 import (
 	"Keiro/gateway/cache"
+	"Keiro/gateway/queue"
 	pb "Keiro/generated/go/proto"
+
+	"github.com/google/uuid"
 )
 
-type responseStruct struct {
+type queryResponseStruct struct {
 	Response         string              `json:"response"`
 	PromptTokens     int32               `json:"prompt_tokens"`
 	CompletionToken  int32               `json:"completion_token"`
@@ -14,13 +17,25 @@ type responseStruct struct {
 	RetrievalDetails *pb.RetrievalConfig `json:"retrieval_details"`
 }
 
+type docHandlerStruct struct {
+	JobId     uuid.UUID    `json:"job_id"`
+	JobStatus queue.Status `json:"job_status"`
+	Error     string       `json:"error"`
+}
+
+var queryReq struct {
+	Query string `json:"query"`
+}
+
 type QueryHandler struct {
 	intelClient pb.IntelligenceServiceClient
 	semCache    *cache.SemanticCache
 }
 
-var queryReq struct {
-	Query string `json:"query"`
+type IngestHandler struct {
+	tracker   *queue.JobTracker
+	ingestion *queue.IngestionQueue
+	maxSize   int32
 }
 
 func NewQueryHandler(client pb.IntelligenceServiceClient, ttl, capacity int, simThreshold float32) (qHandler *QueryHandler) {

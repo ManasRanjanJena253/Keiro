@@ -101,7 +101,7 @@ func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, que
 	return res, nil
 }
 
-func IngestDocument(client pb.IntelligenceServiceClient, mime_type string, chunking_strat int32, namespace string, filename string, content []byte) {
+func IngestDocument(client pb.IntelligenceServiceClient, mime_type string, chunking_strat int32, namespace string, filename string, content []byte) (*pb.IngestDocumentResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -116,11 +116,7 @@ func IngestDocument(client pb.IntelligenceServiceClient, mime_type string, chunk
 	res, err := client.IngestDocument(ctx, req)
 	if err != nil {
 		slog.Error("Couldn't connect to IngestDocument", "ERROR", err)
-		return
+		return nil, err
 	}
-
-	slog.Info(
-		"IngestDocument Response Received",
-		"Chunk Count", res.ChunkCount,
-		"Embedding Status", res.EmbeddingStatus)
+	return res, nil
 }

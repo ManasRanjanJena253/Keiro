@@ -8,7 +8,6 @@ import (
 )
 
 type status int
-
 const (
 	Pending = iota
 	Processing

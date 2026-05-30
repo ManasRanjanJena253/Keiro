@@ -4,6 +4,7 @@ import (
 	"Keiro/gateway/api"
 	config "Keiro/gateway/config"
 	"Keiro/gateway/intelligence"
+	"Keiro/gateway/queue"
 	"context"
 	"log"
 	"log/slog"
@@ -34,7 +35,10 @@ func main() {
 	} else {
 		slog.Info("Connected with the Intelligence layer")
 	}
-	mainRouter, routingErr := api.NewRouter(envVar, pythonClient)
+
+	tracker := queue.NewJobTracker()
+	inQueue := queue.NewIngestionQueue(context.Background(), tracker, pythonClient)
+	mainRouter, routingErr := api.NewRouter(envVar, pythonClient, inQueue, tracker)
 
 	if routingErr != nil {
 		slog.Error("Unable to get router.",

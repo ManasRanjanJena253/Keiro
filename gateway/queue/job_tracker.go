@@ -8,6 +8,7 @@ import (
 )
 
 type Status int
+
 const (
 	Pending = iota
 	Processing
@@ -50,7 +51,7 @@ func (tracker *JobTracker) UpdateStatus(id uuid.UUID, stat Status, errMsg string
 	job.jobError = errMsg
 }
 
-func (tracker *JobTracker) GetStatus(id uuid.UUID) (*jobEntry, error) {
+func (tracker *JobTracker) GetJob(id uuid.UUID) (*jobEntry, error) {
 	tracker.mutex.RLock()
 	defer tracker.mutex.RUnlock()
 	job := tracker.jobsMap[id]
@@ -58,4 +59,12 @@ func (tracker *JobTracker) GetStatus(id uuid.UUID) (*jobEntry, error) {
 		return nil, errors.New("job not found")
 	}
 	return job, nil
+}
+
+func (job *jobEntry) GetStatus() Status {
+	return job.jobStatus
+}
+
+func (job *jobEntry) GetJobError() string {
+	return job.jobError
 }

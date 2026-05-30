@@ -3,15 +3,20 @@ package api
 import (
 	"Keiro/gateway/config"
 	"Keiro/gateway/middleware"
+	"Keiro/gateway/queue"
 	pb "Keiro/generated/go/proto"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
 
-func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient) (*chi.Mux, error) {
+func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, inQueue *queue.IngestionQueue, tracker *queue.JobTracker) (*chi.Mux, error) {
 	mainRouter := chi.NewRouter()
 
+	ingestHandler := NewIngestHandler(int32(envVar.MaxFileSize), inQueue, tracker)
+
+	jobHandler := NewJobHandler(tracker)
+	
 	mainRouter.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://*", "https://*"},
 		AllowedHeaders:   []string{"Content-Type", "X-Secret", "X-Namespace"},
@@ -33,8 +38,8 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient) 
 
 	mainRouter.Get("/health", CheckHealth)
 	v1Router.Post("/query", queryHandler.HandleUserQuery)
-	v1Router.Post("/ingest", IngestHandler)
-	v1Router.Get("/jobs/{id}", JobHandler)
+	v1Router.Post("/ingest", ingestHandler.IngestUserDoc)
+	v1Router.Get("/jobs/{job_id}", jobHandler.UserJobHandler)
 
 	mainRouter.Mount("/v1", v1Router)
 

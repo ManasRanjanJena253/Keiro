@@ -17,7 +17,7 @@ type queryResponseStruct struct {
 	RetrievalDetails *pb.RetrievalConfig `json:"retrieval_details"`
 }
 
-type docHandlerStruct struct {
+type docHandlerResponse struct {
 	JobId     uuid.UUID    `json:"job_id"`
 	JobStatus queue.Status `json:"job_status"`
 	Error     string       `json:"error"`
@@ -38,7 +38,11 @@ type IngestHandler struct {
 	maxSize   int32
 }
 
-func NewQueryHandler(client pb.IntelligenceServiceClient, ttl, capacity int, simThreshold float32) (qHandler *QueryHandler) {
+type JobHandler struct {
+	tracker *queue.JobTracker
+}
+
+func NewQueryHandler(client pb.IntelligenceServiceClient, ttl, capacity int, simThreshold float32) *QueryHandler {
 	cacheStore := cache.NewLRU(capacity, ttl)
 	embedCache := cache.NewEmbeddingCache(cacheStore)
 	semCache := cache.NewSemanticCache(cacheStore, embedCache, simThreshold)
@@ -46,4 +50,16 @@ func NewQueryHandler(client pb.IntelligenceServiceClient, ttl, capacity int, sim
 		intelClient: client,
 		semCache:    semCache,
 	}
+}
+
+func NewIngestHandler(maxFileSize int32, ingestion *queue.IngestionQueue, tracker *queue.JobTracker) *IngestHandler {
+	return &IngestHandler{
+		tracker:   tracker,
+		ingestion: ingestion,
+		maxSize:   maxFileSize,
+	}
+}
+
+func NewJobHandler(tracker *queue.JobTracker) *JobHandler {
+	return &JobHandler{tracker}
 }

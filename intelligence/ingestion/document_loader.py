@@ -1,7 +1,7 @@
 from pypdf import PdfReader
 import io
 
-def load_document(content: bytes, mime_type) -> str:
+def load_document(content: bytes, mime_type: str) -> str:
 
     if mime_type == "application/pdf":
         try:

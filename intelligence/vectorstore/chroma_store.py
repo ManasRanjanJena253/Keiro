@@ -1,12 +1,12 @@
 from chromadb import HttpClient
 
 class ChromaStore:
-    def __init__(self, host : str, port : int):
+    def __init__(self, host: str, port: int):
         self.HOST = host
         self.PORT = port
         self.client = HttpClient(host = self.HOST, port = self.PORT)
 
-    def upsert(self, namespace : str, chunks : list, embeddings : list, filename : str):
+    def upsert(self, namespace: str, chunks: list, embeddings: list, filename: str):
         collection = self.client.get_or_create_collection(name = namespace)
 
         ids = [f"{filename}_{idx}" for idx in range(len(chunks))]
@@ -18,7 +18,7 @@ class ChromaStore:
             embeddings = embeddings
         )
 
-    def query(self, namespace : str, top_k : int, query_embed):
+    def query(self, namespace: str, top_k: int, query_embed):
         try:
             collection = self.client.get_collection(name = namespace)
         except Exception as e:

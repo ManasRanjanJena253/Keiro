@@ -3,6 +3,4 @@ protobuf~=6.33.6
 dotenv
 pypdf
 chromadb
-langchain
-langchain_text_splitters
 semantic_text_splitter

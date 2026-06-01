@@ -4,3 +4,4 @@ dotenv
 pypdf
 chromadb
 semantic_text_splitter
+sentence_transformers

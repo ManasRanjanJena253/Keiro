@@ -6,6 +6,11 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o keiro-gateway ./gateway
 
 FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+RUN adduser --disabled-password --gecos "" keiro
 WORKDIR /app
-COPY --from=builder /app/keiro-gateway .
+COPY --from=builder --chown=keiro:keiro /app/keiro-gateway .
+USER keiro
 ENTRYPOINT ["/app/keiro-gateway"]

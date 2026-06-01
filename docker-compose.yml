@@ -1,4 +1,18 @@
 services:
+  chromadb:
+    image: chromadb/chroma:1.0.15
+    ports:
+      - "7777:8000"
+    volumes:
+      - chroma_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8000'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   intelligence:
     build:
       context: .
@@ -7,11 +21,16 @@ services:
       - "${INTELLIGENCE_PORT:-28080}:28080"
     env_file:
       - .env
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import grpc; grpc.channel_ready_future(grpc.insecure_channel('localhost:28080')).result(timeout=5)"]
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(3); s.connect(('localhost',28080)); s.close()"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
+    depends_on:
+      chromadb:
+        condition: service_healthy
 
   gateway:
     build:
@@ -23,6 +42,10 @@ services:
       - .env
     environment:
       - PYTHON_INTELLIGENCE_ADDR=intelligence:28080
+    restart: unless-stopped
     depends_on:
       intelligence:
         condition: service_healthy
+
+volumes:
+  chroma_data:

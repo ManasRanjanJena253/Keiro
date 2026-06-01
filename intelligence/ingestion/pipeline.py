@@ -1,10 +1,10 @@
-from embeddings import local_embedder, base_embedder
-from chunker import Chunker
-from ingestion.document_loader import load_document
-from vectorstore import chroma_store
+from embeddings.base_embedder import BaseEmbedder
+from .chunker import Chunker
+from .document_loader import load_document
+from vectorstore.chroma_store import ChromaStore
 
 class IngestionPipeline:
-    def __init__(self, embedder: base_embedder.BaseEmbedder, chunker: Chunker, store: chroma_store.ChromaStore):
+    def __init__(self, embedder: BaseEmbedder, chunker: Chunker, store: ChromaStore):
         self.embedder = embedder
         self.chunker = chunker
         self.store = store

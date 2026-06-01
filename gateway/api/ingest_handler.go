@@ -28,7 +28,7 @@ func (ingester *IngestHandler) IngestUserDoc(w http.ResponseWriter, r *http.Requ
 	}(file)
 
 	fileSize := header.Size
-	if header.Size > int64(ingester.maxSize) {
+	if header.Size > int64(ingester.maxSize)*1024*1024 {
 		slog.Error("File size too large", "File Size", fileSize)
 		httpWriter.RespondWithError(w, 413, "File size too large")
 		return

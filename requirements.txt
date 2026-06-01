@@ -1,7 +1,8 @@
-grpcio~=1.80.0
-protobuf~=6.33.6
+grpcio
+protobuf
 dotenv
 pypdf
 chromadb
 semantic_text_splitter
 sentence_transformers
+google-generativeai

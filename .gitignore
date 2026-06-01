@@ -127,4 +127,4 @@ benchmarks/results/*.csv
 Thumbs.db
 desktop.ini
 
-gateway/tests.http
+tests.http

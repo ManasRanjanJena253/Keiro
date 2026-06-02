@@ -5,4 +5,5 @@ pypdf
 chromadb
 semantic_text_splitter
 sentence_transformers
-google-generativeai
+google-genai
+rank_bm25

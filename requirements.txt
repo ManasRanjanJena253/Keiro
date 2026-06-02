@@ -7,3 +7,4 @@ semantic_text_splitter
 sentence_transformers
 google-genai
 rank_bm25
+numpy

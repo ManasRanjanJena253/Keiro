@@ -1,4 +1,4 @@
-from chromadb import HttpClient
+from chromadb import HttpClient, Include
 
 class ChromaStore:
     def __init__(self, host: str, port: int):
@@ -18,15 +18,20 @@ class ChromaStore:
             embeddings = embeddings
         )
 
-    def query(self, namespace: str, top_k: int, query_embed):
+    def query(self, namespace: str, top_k: int, query_embed, return_embeddings: bool = False):
         try:
             collection = self.client.get_collection(name = namespace)
         except Exception as e:
             raise ValueError(f"Unable to find the namespace. Error: {e}")
 
+        include: Include = ["documents", "distances", "metadatas"]
+
+        if return_embeddings:
+            include.append("embeddings")
+
         retrieved_result = collection.query(query_embeddings = query_embed,
                                             n_results = top_k,
-                                            include = ["documents", "distances", "metadatas"],
+                                            include = include,
                                             )
 
         return retrieved_result

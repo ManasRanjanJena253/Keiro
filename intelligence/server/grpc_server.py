@@ -1,12 +1,15 @@
 import sys
 import os
 from dotenv import load_dotenv
+from google import genai
 
 from embeddings.base_embedder import BaseEmbedder
 from embeddings.local_embedder import LocalEmbedder
 from ingestion.chunker import Chunker
 from ingestion.pipeline import IngestionPipeline
 from vectorstore.chroma_store import ChromaStore
+from classifier.query_classifier import ClassifyQuery
+from classifier.strategy_selector import get_config
 
 import grpc
 import rag_pb2
@@ -14,22 +17,35 @@ import rag_pb2_grpc
 from concurrent import futures
 
 class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
-    def __init__(self, pipeline: IngestionPipeline):
+    def __init__(self, pipeline: IngestionPipeline, classifier: ClassifyQuery):
         self.pipeline = pipeline
+        self.classifier = classifier
 
     def ComputeEmbeddings(self, request, context):
         return super().ComputeEmbeddings(request, context)
 
     def ClassifyQueryType(self, request, context):
-        return rag_pb2.ClassifyQueryResponse(
-            query_type = 1,
-            config = rag_pb2.RetrievalConfig(
-                retrieval_type = 3,
-                top_k = 5,
-                rerank = True,
-                decompose = False,
+        query_details = self.classifier.classify(request.user_query)
+
+        strategy_config = get_config(query_details = query_details)
+
+        try:
+            retrieval_type = rag_pb2.RetrievalType.Value(strategy_config["retrieval_type"])
+            query_type = rag_pb2.QueryType.Value(query_details.query_type.upper())
+
+            return rag_pb2.ClassifyQueryResponse(
+                query_type = query_type,
+                config = rag_pb2.RetrievalConfig(
+                    retrieval_type = retrieval_type,
+                    top_k = strategy_config["top_k"],
+                    rerank = strategy_config["rerank"],
+                    decompose = strategy_config["decompose"],
+                )
             )
-        )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return rag_pb2.ClassifyQueryResponse()
 
     def ExecuteRetrieval(self, request, context):
         return super().ExecuteRetrieval(request = request, context = context)
@@ -85,7 +101,21 @@ def serve():
 
     pipeline = IngestionPipeline(embedder, chunker, store)
 
-    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline), server)
+    llm_provider = os.getenv("KEIRO_LLM_PROVIDER")
+    if llm_provider == "gemini":
+        model = os.getenv("KEIRO_GEMINI_MODEL_NAME")
+        client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+
+    elif llm_provider == "openai":
+        model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
+        pass  # Haven't implemented openai models due to low rate limits
+
+    else:
+        raise ValueError(f"Unsupported LLM provider: {llm_provider}. Must be 'gemini' or 'openai'")
+
+    classifier = ClassifyQuery(client = client, model_name = model)
+
+    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier), server)
     server.add_insecure_port(f"{HOST}:{PORT}")
     print(f"Starting the server at port {HOST}:{PORT}")
     server.start()

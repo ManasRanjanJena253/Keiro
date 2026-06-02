@@ -8,8 +8,8 @@ class ResponseSchema(BaseModel):
     domain: str
 
 class ClassifyQuery:
-    def __init__(self, google_client: genai.Client, model_name: str = "gemini-2.5-flash"):
-        self.client = google_client
+    def __init__(self, client: genai.Client, model_name: str = "gemini-2.5-flash"):
+        self.client = client
 
         prompt_path = Path(__file__).parent / "classifier_system_prompt.txt"
         try:

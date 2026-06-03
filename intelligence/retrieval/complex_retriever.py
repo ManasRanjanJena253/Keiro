@@ -1,18 +1,18 @@
 from google import genai
 import numpy as np
 from embeddings.base_embedder import BaseEmbedder
+from reranker.cross_encoder_reranker import CrossEncoderReranker
 from vectorstore.chroma_store import ChromaStore
 from .retriever import BaseRetriever
 
 
 class ComplexRetriever(BaseRetriever):
-    def __init__(self, embedder: BaseEmbedder, store: ChromaStore, client: genai.Client, model_name: str, mmr_lambda: float):
+    def __init__(self, embedder: BaseEmbedder, store: ChromaStore, client: genai.Client, model_name: str, mmr_lambda: float, cross_encoder: CrossEncoderReranker):
         super().__init__(embedder, store)
-        self.embedder = embedder
-        self.store = store
         self.llm_client = client
         self.model = model_name
         self.lambda_val = mmr_lambda
+        self.cross_encoder = cross_encoder
 
     def retrieve_top_k(self, namespace: str, top_k: int, query: str):
         query_embed = self.embedder.embed(query)
@@ -29,7 +29,7 @@ class ComplexRetriever(BaseRetriever):
 
         dense_embeddings = dense_retrieval["embeddings"][0]
         hypothesis_embeddings = hypothesis_retrieval["embeddings"][0]
-        sub_query_embeddings = sub_query_embed["embeddings"][0]
+        sub_query_embeddings = sub_query_retrieval["embeddings"][0]
 
         all_embeddings = dense_embeddings + hypothesis_embeddings + sub_query_embeddings
         cleaned_embeddings = [doc for doc in all_embeddings if not (doc in seen or seen.add(doc))]
@@ -40,6 +40,9 @@ class ComplexRetriever(BaseRetriever):
                                     top_k = top_k,
                                     lambda_val = self.lambda_val)
 
+        reranked_chunks = self.cross_encoder.rerank(query, chunks = mmr_result, top_k = top_k)
+
+        return reranked_chunks
 
     def _compute_hypothesis_embedding(self, query: str):
         prompt = f"""Generate a hypothetical answer for this query,

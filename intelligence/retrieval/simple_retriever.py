@@ -18,7 +18,7 @@ class SimpleRetriever(BaseRetriever):
         dense_chunks = dense_result["documents"][0]
 
         all_chunks_result = self.store.get_all_chunks(namespace)
-        all_docs = all_chunks_result["documents"]
+        all_docs = all_chunks_result
 
         tokenized_corpus = [doc.lower().split() for doc in all_docs]
         tokenized_query = query.lower().split()

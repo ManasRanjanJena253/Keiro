@@ -15,8 +15,8 @@ class GeminiLLM(BaseLLM):
         )
 
         return {
-            "response": response.txt,
+            "response": response.text,
             "prompt_tokens": response.usage_metadata.prompt_token_count,
-            "completion_tokens": response.usage_metadata.candidate_token_count,
+            "completion_tokens": response.usage_metadata.candidates_token_count,
             "model": self.model
         }

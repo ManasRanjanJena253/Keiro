@@ -30,7 +30,7 @@ func ConnectToPython(envVar *config.Config) (pb.IntelligenceServiceClient, *grpc
 }
 
 func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace string) (*pb.ClassifyQueryResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	req := &pb.ClassifyQueryRequest{
@@ -47,7 +47,7 @@ func ClassifyQuery(client pb.IntelligenceServiceClient, query string, namespace 
 }
 
 func ComputeEmbeddings(client pb.IntelligenceServiceClient, query string) ([]float32, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	req := &pb.ComputeEmbeddingRequest{
@@ -64,7 +64,7 @@ func ComputeEmbeddings(client pb.IntelligenceServiceClient, query string) ([]flo
 }
 
 func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config *pb.RetrievalConfig, namespace string) (*pb.ExecuteRetrievalResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	req := &pb.ExecuteRetrievalRequest{
@@ -83,7 +83,7 @@ func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config 
 }
 
 func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, query string, retrieved_chunk []*pb.RetrievedChunk) (*pb.GeneratedResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*25)
 	defer cancel()
 
 	req := &pb.GenerateResponseRequest{
@@ -102,7 +102,7 @@ func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, que
 }
 
 func IngestDocument(client pb.IntelligenceServiceClient, mime_type string, chunking_strat int32, namespace string, filename string, content []byte) (*pb.IngestDocumentResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	req := &pb.IngestDocumentRequest{

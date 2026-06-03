@@ -39,4 +39,4 @@ class ChromaStore:
     def get_all_chunks(self, namespace: str):
         collection = self.client.get_collection(name = namespace)
         all_chunks = collection.get()
-        return all_chunks["documents"]
+        return all_chunks["documents"][0]

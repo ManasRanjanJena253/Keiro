@@ -1,0 +1,49 @@
+<div class="card" style="animation: fadeIn 0.2s ease;">
+    <style>
+        @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+        .job-id-box { background: var(--bg-subtle); border-radius: var(--radius-sm); padding: 0.6rem 0.875rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; word-break: break-all; }
+        .status-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .poll-note { font-size: 0.78rem; color: var(--text-light); display: flex; align-items: center; gap: 0.4rem; }
+    </style>
+
+    <div class="section-label" style="margin-bottom: 0.75rem;">Job Status</div>
+
+    <div class="job-id-box">Job ID: {{.JobID}}</div>
+
+    <div class="status-row">
+        {{if eq .Status "pending"}}
+        <span class="badge badge-gray">PENDING</span>
+        {{else if eq .Status "processing"}}
+        <span class="badge badge-warning">PROCESSING</span>
+        {{else if eq .Status "complete"}}
+        <span class="badge badge-green">COMPLETE</span>
+        {{else if eq .Status "failed"}}
+        <span class="badge badge-red">FAILED</span>
+        {{end}}
+    </div>
+
+    {{if or (eq .Status "pending") (eq .Status "processing")}}
+    <div
+            hx-get="/v1/ui/jobs/{{.JobID}}"
+            hx-trigger="every 2s"
+            hx-target="#job-status-area"
+            hx-swap="innerHTML">
+    </div>
+    <div class="poll-note">
+        <div class="spinner"></div>
+        <span>Polling /v1/ui/jobs/{{.JobID}} every 2s...</span>
+    </div>
+    {{end}}
+
+    {{if eq .Status "complete"}}
+    <p style="font-size:0.85rem; color: #15803d; margin-top:0.25rem;">
+        ✓ Document successfully ingested into namespace.
+    </p>
+    {{end}}
+
+    {{if eq .Status "failed"}}
+    <p style="font-size:0.85rem; color: #dc2626; margin-top:0.25rem;">
+        ✗ {{.Error}}
+    </p>
+    {{end}}
+</div>

@@ -19,6 +19,11 @@ type Config struct {
 		Port string
 	}
 
+	Chroma struct {
+		Host string
+		Port string
+	}
+
 	Auth string
 	APIs struct {
 		OPENAI string
@@ -50,6 +55,9 @@ func LoadEnv() (*Config, error) {
 
 	config.Intelligence.Host = os.Getenv("INTELLIGENCE_HOST")
 	config.Intelligence.Port = os.Getenv("INTELLIGENCE_PORT")
+
+	config.Chroma.Host = os.Getenv("CHROMA_STORE_HOST")
+	config.Chroma.Port = os.Getenv("CHROMA_STORE_PORT")
 
 	config.Auth = os.Getenv("KEIRO_SECRET")
 	config.APIs.GEMINI = os.Getenv("GEMINI_API_KEY")

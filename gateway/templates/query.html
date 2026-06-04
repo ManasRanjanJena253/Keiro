@@ -1,0 +1,185 @@
+{{template "base.html" .}}
+
+{{define "title"}}Query — Keiro{{end}}
+
+{{define "styles"}}
+<style>
+    .query-layout {
+        display: grid;
+        grid-template-columns: 1fr 280px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .query-input-area {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .query-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .hero-strip {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        background: linear-gradient(135deg, var(--go-cyan-light) 0%, #fff8d6 100%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .hero-strip img {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .hero-strip-text h1 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.2rem;
+    }
+
+    .hero-strip-text p {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
+    .response-area {
+        margin-top: 1.25rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-light);
+    }
+
+    .empty-state-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.5;
+    }
+
+    .empty-state p {
+        font-size: 0.9rem;
+    }
+
+    .submit-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+    }
+
+    .submit-row .btn-primary {
+        width: auto;
+        flex: 1;
+    }
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="hero-strip">
+    <img src="/static/images/hero.png" alt="Gopher and Snake working together"/>
+    <div class="hero-strip-text">
+        <h1>Keiro Query Interface</h1>
+        <p>Adaptive RAG with three-tier retrieval — Hybrid, Multi-Vector, and Self-Querying.<br>
+            Results are namespace-scoped and semantically cached.</p>
+    </div>
+</div>
+
+<div class="query-layout">
+    <div class="query-input-area">
+        <div class="card">
+            <div class="section-label">Query</div>
+            <form hx-post="/v1/ui/query"
+                  hx-target="#query-response"
+                  hx-swap="innerHTML"
+                  hx-indicator="#query-spinner">
+                <div class="input-group">
+                    <textarea
+                            class="input-field"
+                            name="query"
+                            placeholder="Enter your query here... (e.g., What are the obligations for high-risk AI systems?)"
+                            required
+                            style="min-height: 160px;"
+                    ></textarea>
+                </div>
+
+                <div class="input-group" style="margin-bottom:0;">
+                    <label class="input-label">Namespace</label>
+                    <input
+                            class="input-field"
+                            type="text"
+                            name="namespace"
+                            placeholder="e.g. namespace1"
+                            value="{{.DefaultNamespace}}"
+                            required
+                    />
+                </div>
+
+                <div class="submit-row">
+                    <button type="submit" class="btn-primary">Submit Query</button>
+                    <div id="query-spinner" class="htmx-indicator">
+                        <div class="spinner"></div>
+                        <span style="font-size:0.82rem; color: var(--text-muted);">Processing...</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="query-sidebar">
+        <div class="card">
+            <div class="section-label">Retrieval Tiers</div>
+            <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.25rem;">
+                <div>
+                    <span class="badge badge-cyan" style="margin-bottom:0.3rem;">HYBRID</span>
+                    <p style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Dense + BM25 sparse search. Fast path for factual queries.</p>
+                </div>
+                <hr class="divider" style="margin:0.25rem 0;">
+                <div>
+                    <span class="badge badge-yellow" style="margin-bottom:0.3rem;">MULTI_VECTOR</span>
+                    <p style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Multiple embeddings + MMR + cross-encoder reranking for complex synthesis.</p>
+                </div>
+                <hr class="divider" style="margin:0.25rem 0;">
+                <div>
+                    <span class="badge" style="background:#e8f4e8;color:#2d6a2d;border:1px solid #b3d9b3; margin-bottom:0.3rem;">SELF_QUERYING</span>
+                    <p style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">Iterative multi-hop retrieval for chained reasoning queries.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-label">Tips</div>
+            <ul style="font-size:0.78rem; color:var(--text-muted); line-height:1.7; padding-left:1rem;">
+                <li>Simple factual queries route to Hybrid tier</li>
+                <li>Comparison queries route to Multi-Vector</li>
+                <li>Chained reasoning routes to Self-Querying</li>
+                <li>Repeat queries return cached responses</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="response-area" id="query-response">
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state-icon">⌕</div>
+            <p>Submit a query to see the response here.</p>
+        </div>
+    </div>
+</div>
+{{end}}

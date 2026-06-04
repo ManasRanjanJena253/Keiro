@@ -7,12 +7,15 @@ import (
 	"log/slog"
 	"math"
 	"strings"
+	"sync/atomic"
 )
 
 type SemanticCache struct {
 	embedCache   *EmbeddingCache
 	cacheStore   *LRUStore
 	simThreshold float32
+	hits         int64
+	misses       int64
 }
 
 func CalcCosineSim(queryEmbed, cacheEmbed []float32) (float32, error) {
@@ -81,7 +84,22 @@ func (semCache *SemanticCache) Get(namespace string, embedding []float32) (strin
 		}
 	}
 	if maxSim == -1 {
+		atomic.AddInt64(&semCache.misses, 1)
 		return "", false
 	}
+	atomic.AddInt64(&semCache.hits, 1)
 	return response, true
+}
+
+func (semCache *SemanticCache) Size() int {
+	return semCache.embedCache.lruStore.Len()
+}
+
+func (semCache *SemanticCache) HitRate() float64 {
+	h := atomic.LoadInt64(&semCache.hits)
+	m := atomic.LoadInt64(&semCache.misses)
+	if h+m == 0 {
+		return 0
+	}
+	return float64(h) / float64(h+m)
 }

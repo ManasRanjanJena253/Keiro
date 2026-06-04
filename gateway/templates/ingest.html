@@ -1,0 +1,167 @@
+{{template "base.html" .}}
+
+{{define "title"}}Ingest — Keiro{{end}}
+
+{{define "styles"}}
+<style>
+    .ingest-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 2.5rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--bg-subtle);
+        position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: var(--go-cyan);
+        background: var(--go-cyan-light);
+    }
+
+    .drop-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+    }
+
+    .drop-zone-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        display: block;
+        opacity: 0.6;
+    }
+
+    .drop-zone-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .drop-zone-sub {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .file-selected {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: var(--go-cyan-light);
+        border-radius: var(--radius-sm);
+        font-size: 0.82rem;
+        color: var(--go-cyan);
+        font-weight: 500;
+    }
+
+    #job-status-area {
+        min-height: 200px;
+    }
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1>Ingest Interface</h1>
+    <p>Upload documents into a namespace. PDF and plain text files are supported.</p>
+</div>
+
+<div class="ingest-layout">
+    <div class="card">
+        <div class="section-label">Document Upload</div>
+
+        <form hx-post="/v1/ui/ingest"
+              hx-target="#job-status-area"
+              hx-swap="innerHTML"
+              hx-encoding="multipart/form-data"
+              hx-indicator="#ingest-spinner">
+
+            <div class="input-group">
+                <div class="drop-zone" id="drop-zone">
+                    <input type="file" name="file" id="file-input" accept=".pdf,.txt" required
+                           onchange="showFileName(this)"/>
+                    <span class="drop-zone-icon">📄</span>
+                    <div class="drop-zone-title">File Drop Zone</div>
+                    <div class="drop-zone-sub">Click to upload or drag &amp; drop<br>PDF or plain text (Max {{.MaxSizeMB}}MB)</div>
+                    <div class="file-selected" id="file-selected">
+                        <span>✓</span>
+                        <span id="file-name"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Namespace</label>
+                <input class="input-field" type="text" name="namespace"
+                       placeholder="e.g. namespace1" required/>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Chunking Strategy</label>
+                <select class="input-field" name="chunking_strategy">
+                    <option value="0">Default</option>
+                    <option value="1">Fixed Size</option>
+                    <option value="2">Structural</option>
+                    <option value="3">Semantic</option>
+                </select>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+                <button type="submit" class="btn-primary" style="width:auto; flex:1;">
+                    Submit Ingestion
+                </button>
+                <div id="ingest-spinner" class="htmx-indicator">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div>
+        <div id="job-status-area">
+            <div class="card">
+                <div class="empty-state" style="padding: 2.5rem 1rem;">
+                    <div class="empty-state-icon">📥</div>
+                    <p>Job status will appear here after submission.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showFileName(input) {
+        if (input.files && input.files[0]) {
+            const selected = document.getElementById('file-selected');
+            const name = document.getElementById('file-name');
+            name.textContent = input.files[0].name;
+            selected.style.display = 'flex';
+        }
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const fileInput = document.getElementById('file-input');
+        fileInput.files = e.dataTransfer.files;
+        showFileName(fileInput);
+    });
+</script>
+{{end}}

@@ -8,7 +8,7 @@ def get_config(query_details: ResponseSchema):
             retrieval_type = "HYBRID"
         return {
             "retrieval_type": retrieval_type,
-            "top_k": 2,
+            "top_k": 3,
             "rerank": False,
             "decompose": False
         }
@@ -32,7 +32,7 @@ def get_config(query_details: ResponseSchema):
     else:
         return {
             "retrieval_type": "RETRIEVAL_TYPE_UNSPECIFIED",
-            "top_k": 2,
+            "top_k": 3,
             "rerank": False,
             "decompose": False
         }

@@ -2,10 +2,11 @@ from google import genai
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pathlib import Path
+from typing import Literal
 
 class ResponseSchema(BaseModel):
-    query_type: str
-    domain: str
+    query_type: Literal["simple", "complex", "multi_hop"]
+    domain: str | None = None
 
 class ClassifyQuery:
     def __init__(self, client: genai.Client, model_name: str = "gemini-2.5-flash"):
@@ -33,12 +34,18 @@ class ClassifyQuery:
             )
 
         except Exception as e:
-            return {"query_type": "simple", "domain": None}
+            return ResponseSchema(
+                query_type = "simple",
+                domain = None
+            )
 
         try:
             classified_query: ResponseSchema = response.parsed
         except Exception as e:
-            return {"query_type": "simple", "domain": None}
+            return ResponseSchema(
+                query_type = "simple",
+                domain = None
+            )
         return classified_query
 
 

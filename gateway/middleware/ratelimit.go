@@ -3,6 +3,7 @@ package middleware
 import (
 	"Keiro/gateway/config"
 	"Keiro/gateway/httpWriter"
+	"Keiro/gateway/metrics"
 	"net/http"
 	"strconv"
 	"sync"
@@ -32,6 +33,7 @@ func RateLimit(envVar *config.Config) func(http.Handler) http.Handler {
 					"Retry-After",
 					strconv.Itoa(delay))
 
+				metrics.RateLimitRejections.WithLabelValues(namespace).Inc()
 				httpWriter.RespondWithError(w, 429, "Rate Limit Exceeded")
 				return
 			}

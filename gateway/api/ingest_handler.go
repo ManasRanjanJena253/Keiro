@@ -2,6 +2,7 @@ package api
 
 import (
 	"Keiro/gateway/httpWriter"
+	"Keiro/gateway/metrics"
 	"Keiro/gateway/queue"
 	pb "Keiro/generated/go/proto"
 	"io"
@@ -87,12 +88,12 @@ func (ingester *IngestHandler) IngestUserDoc(w http.ResponseWriter, r *http.Requ
 		httpWriter.RespondWithJSON(w, 500, response)
 		return
 	}
-
 	response := docHandlerResponse{
 		JobId:     id,
 		JobStatus: queue.Pending,
 		Error:     "",
 	}
 
+	metrics.IngestionThroughput.WithLabelValues(namespace.(string)).Inc()
 	httpWriter.RespondWithJSON(w, 200, response)
 }

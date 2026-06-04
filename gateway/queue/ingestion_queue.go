@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"Keiro/gateway/metrics"
 	pb "Keiro/generated/go/proto"
 	"context"
 	"errors"
@@ -30,11 +31,15 @@ func NewIngestionQueue(ctx context.Context, tracker *JobTracker, client pb.Intel
 		for {
 			select {
 			case job := <-ingestionStruct.jobCh:
+				metrics.ActiveIngestionJobs.Inc()
+
 				tracker.UpdateStatus(job.jobId, Processing, "")
 				_, err := ingestionStruct.intelClient.IngestDocument(ctx, job.jobDetails)
 				if err != nil {
+					metrics.ActiveIngestionJobs.Dec()
 					tracker.UpdateStatus(job.jobId, Failed, err.Error())
 				} else {
+					metrics.ActiveIngestionJobs.Dec()
 					tracker.UpdateStatus(job.jobId, Completed, "")
 				}
 			case <-ctx.Done():

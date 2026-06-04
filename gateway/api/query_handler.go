@@ -3,12 +3,16 @@ package api
 import (
 	"Keiro/gateway/httpWriter"
 	"Keiro/gateway/intelligence"
+	"Keiro/gateway/metrics"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
+	"time"
 )
 
 func (qHandler *QueryHandler) HandleUserQuery(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
 	ctx := r.Context()
 	namespace := ctx.Value(httpWriter.NamespaceKey{})
 	if err := json.NewDecoder(r.Body).Decode(&queryReq); err != nil {
@@ -28,6 +32,7 @@ func (qHandler *QueryHandler) HandleUserQuery(w http.ResponseWriter, r *http.Req
 
 	response, ok := qHandler.semCache.Get(namespace.(string), queryEmbed)
 	if !ok { // cache miss
+		metrics.CacheMisses.WithLabelValues(namespace.(string)).Inc()
 		queryDetails, err := intelligence.ClassifyQuery(qHandler.intelClient, query, namespace.(string))
 		if err != nil {
 			httpWriter.RespondWithError(w, 502, "Unable to connect with gateway")
@@ -58,8 +63,12 @@ func (qHandler *QueryHandler) HandleUserQuery(w http.ResponseWriter, r *http.Req
 			return
 		}
 
+		metrics.TokenUsage.WithLabelValues(namespace.(string), finalResponse.Model).Add(float64(finalResponse.PromptTokens + finalResponse.CompletionTokens))
+
 		qHandler.semCache.Set(namespace.(string), query, queryEmbed, finalResponse.Response)
 
+		tier := strings.ToLower(queryDetails.Config.RetrievalType.String())
+		metrics.QueryLatency.WithLabelValues(tier).Observe(time.Since(startTime).Seconds())
 		httpWriter.RespondWithJSON(w, 200, queryResponseStruct{
 			Response:         finalResponse.Response,
 			PromptTokens:     finalResponse.PromptTokens,
@@ -71,6 +80,8 @@ func (qHandler *QueryHandler) HandleUserQuery(w http.ResponseWriter, r *http.Req
 
 		return
 	}
+
+	metrics.CacheHits.WithLabelValues(namespace.(string)).Inc()
 
 	httpWriter.RespondWithJSON(w, 200, queryResponseStruct{
 		Response:         response,

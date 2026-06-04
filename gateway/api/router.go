@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, inQueue *queue.IngestionQueue, tracker *queue.JobTracker) (*chi.Mux, error) {
@@ -16,7 +17,7 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 	ingestHandler := NewIngestHandler(int32(envVar.MaxFileSize), inQueue, tracker)
 
 	jobHandler := NewJobHandler(tracker)
-	
+
 	mainRouter.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://*", "https://*"},
 		AllowedHeaders:   []string{"Content-Type", "X-Secret", "X-Namespace"},
@@ -41,6 +42,7 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 	v1Router.Post("/ingest", ingestHandler.IngestUserDoc)
 	v1Router.Get("/jobs/{job_id}", jobHandler.UserJobHandler)
 
+	mainRouter.Handle("/metrics", promhttp.Handler())
 	mainRouter.Mount("/v1", v1Router)
 
 	return mainRouter, nil

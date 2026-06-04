@@ -1,7 +1,6 @@
 package api
 
 import (
-	"Keiro/gateway/cache"
 	"Keiro/gateway/config"
 	"Keiro/gateway/middleware"
 	"Keiro/gateway/queue"
@@ -12,7 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, inQueue *queue.IngestionQueue, tracker *queue.JobTracker, semCache *cache.SemanticCache) (*chi.Mux, error) {
+func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, inQueue *queue.IngestionQueue, tracker *queue.JobTracker) (*chi.Mux, error) {
 	mainRouter := chi.NewRouter()
 
 	ingestHandler := NewIngestHandler(int32(envVar.MaxFileSize), inQueue, tracker)
@@ -45,16 +44,9 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 
 	mainRouter.Handle("/static/*", StaticFileHandler())
 
-	uiHandler := NewUIHandler(intelClient, semCache, tracker, inQueue,
-		envVar.MaxFileSize, envVar.Chroma.Host, envVar.Chroma.Port)
-
-	v1Router.Get("/ui/query", uiHandler.HandleQueryPage)
-	v1Router.Post("/ui/query", uiHandler.HandleQuerySubmit)
-	v1Router.Get("/ui/ingest", uiHandler.HandleIngestPage)
-	v1Router.Post("/ui/ingest", uiHandler.HandleIngestSubmit)
-	v1Router.Get("/ui/jobs/{job_id}", uiHandler.HandleUIJobStatus)
-	v1Router.Get("/ui/health", uiHandler.HandleHealthPage)
-	v1Router.Get("/ui/health/status", uiHandler.HandleHealthStatus)
+	mainRouter.Get("/", ServeUIPage("query.html"))
+	mainRouter.Get("/ingest", ServeUIPage("ingest.html"))
+	mainRouter.Get("/health-ui", ServeUIPage("health.html"))
 
 	mainRouter.Handle("/metrics", promhttp.Handler())
 	mainRouter.Mount("/v1", v1Router)

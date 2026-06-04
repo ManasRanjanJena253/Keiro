@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keiro — Self-hostable Adaptive RAG Infrastructure</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Landing page specific */
+        body { overflow-x: hidden; }
+
+        .landing-nav {
+            height: var(--nav-h);
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 3rem;
+            gap: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 1px 12px rgba(0,174,216,0.07);
+        }
+
+        .landing-nav .nav-links { margin-left: auto; }
+
+        .btn-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            font-weight: 600;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            border: 1.5px solid var(--border);
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--go-cyan);
+            color: var(--go-cyan);
+            background: var(--go-cyan-light);
+        }
+
+        .btn-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.65rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-weight: 700;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            background: var(--go-cyan);
+            color: white;
+            border: none;
+        }
+
+        .btn-cta:hover {
+            background: var(--go-cyan-dark);
+            box-shadow: 0 4px 16px rgba(0,174,216,0.35);
+            transform: translateY(-1px);
+        }
+
+        /* Hero */
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 3rem 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .hero-left {}
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--go-cyan-light);
+            border: 1px solid var(--go-cyan-mid);
+            border-radius: 20px;
+            padding: 0.3rem 0.875rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--go-cyan-dark);
+            font-family: var(--font-mono);
+            margin-bottom: 1.25rem;
+            letter-spacing: 0.3px;
+        }
+
+        .hero-eyebrow span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--go-cyan);
+        }
+
+        .hero-headline {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.15;
+            color: var(--text);
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .hero-headline em {
+            font-style: normal;
+            color: var(--go-cyan);
+        }
+
+        .hero-sub {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            max-width: 480px;
+        }
+
+        .hero-cta-row {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .hero-langs {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .hero-langs span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-right: 0.25rem;
+        }
+
+        .lang-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .lang-go {
+            background: var(--go-cyan-light);
+            color: var(--go-cyan-dark);
+            border: 1px solid var(--go-cyan-mid);
+        }
+
+        .lang-python {
+            background: var(--python-blue-light);
+            color: var(--python-blue);
+            border: 1px solid #bdd4ea;
+        }
+
+        .lang-grpc {
+            background: #f3e8ff;
+            color: #7c3aed;
+            border: 1px solid #ddd6fe;
+        }
+
+        .lang-docker {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+
+        /* Hero image */
+        .hero-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .hero-image-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .hero-image-bg {
+            position: absolute;
+            inset: -20px;
+            background: radial-gradient(ellipse at center, rgba(0,174,216,0.12) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-img {
+            width: 100%;
+            height: auto;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 8px 32px rgba(0,100,150,0.15));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-10px); }
+        }
+
+        /* Features */
+        .features {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 3rem 4rem;
+        }
+
+        .features-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .features-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            margin-bottom: 0.25rem;
+        }
+
+        .features-header p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .feature-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .feature-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 0.875rem;
+        }
+
+        .feature-icon.cyan { background: var(--go-cyan-light); }
+        .feature-icon.yellow { background: var(--python-yellow-light); }
+        .feature-icon.blue { background: var(--python-blue-light); }
+        .feature-icon.green { background: var(--chroma-green-light); }
+        .feature-icon.purple { background: #f3e8ff; }
+        .feature-icon.orange { background: #fff7ed; }
+
+        .feature-num {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--go-cyan);
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.5px;
+        }
+
+        .feature-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            color: var(--text);
+        }
+
+        .feature-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Links section */
+        .links-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 3rem 3rem;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .link-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+        }
+
+        .link-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+            border-color: var(--go-cyan);
+        }
+
+        .link-card-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .link-card-text strong {
+            display: block;
+            font-size: 0.92rem;
+            font-weight: 600;
+            margin-bottom: 0.15rem;
+        }
+
+        .link-card-text span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .link-card-arrow {
+            margin-left: auto;
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: transform 0.15s, color 0.15s;
+        }
+
+        .link-card:hover .link-card-arrow {
+            transform: translateX(3px);
+            color: var(--go-cyan);
+        }
+
+        /* Landing footer */
+        .landing-footer {
+            border-top: 1px solid var(--border);
+            padding: 1.25rem 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-surface);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .footer-links { display: flex; gap: 1.25rem; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+        .footer-links a:hover { color: var(--go-cyan); }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="landing-nav">
+    <a href="/" class="nav-brand">
+        <div class="nav-logo">K</div>
+        <span class="nav-wordmark">Kei<em>ro</em></span>
+    </a>
+    <div class="nav-links">
+        <a href="/" class="nav-link active">Home</a>
+        <a href="/query" class="nav-link">Query</a>
+        <a href="/ingest" class="nav-link">Ingest</a>
+        <a href="/health-ui" class="nav-link">Health</a>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:0.75rem;align-items:center;">
+        <a href="https://github.com/ManasRanjanJena253/Keiro" target="_blank" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+            GitHub
+        </a>
+        <a href="/query" class="btn-cta">Try Keiro →</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-left">
+        <div class="hero-eyebrow">
+            <span></span>
+            Self-hostable · Open Source · Production-grade
+        </div>
+
+        <h1 class="hero-headline">
+            Adaptive RAG.<br>
+            <em>Built Different.</em>
+        </h1>
+
+        <p class="hero-sub">
+            Keiro is a self-hostable RAG infrastructure with three-tier adaptive retrieval,
+            semantic caching, namespace isolation, and full observability.
+            Go gateway. Python intelligence layer. One <code style="font-family:var(--font-mono);font-size:0.9em;background:var(--bg-subtle);padding:0.1em 0.4em;border-radius:4px;">docker compose up</code>.
+        </p>
+
+        <div class="hero-cta-row">
+            <a href="/query" class="btn-cta">Launch Query Interface →</a>
+            <a href="https://github.com/ManasRanjanJena253/Keiro" target="_blank" class="btn-outline">
+                View on GitHub
+            </a>
+            <a href="https://arxiv.org/abs/2506.XXXXX" target="_blank" class="btn-outline" style="border-color:#e85d3a;color:#e85d3a;" title="arXiv preprint (coming soon)">
+                📄 arXiv Paper
+            </a>
+        </div>
+
+        <div class="hero-langs">
+            <span>Built with</span>
+            <span class="lang-badge lang-go">=GO</span>
+            <span class="lang-badge lang-python">🐍 Python</span>
+            <span class="lang-badge lang-grpc">gRPC</span>
+            <span class="lang-badge lang-docker">🐳 Docker</span>
+        </div>
+    </div>
+
+    <div class="hero-right">
+        <div class="hero-image-wrap">
+            <div class="hero-image-bg"></div>
+            <img src="/static/images/hero.png" alt="Go Gopher and Python Snake building Keiro together" class="hero-img"/>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <div class="features-header">
+        <h2>Key Features</h2>
+        <p>Everything you need for production-grade RAG, nothing you don't.</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon cyan">🔀</div>
+            <div class="feature-num">01 — RETRIEVAL</div>
+            <div class="feature-title">Three-Tier Adaptive Retrieval</div>
+            <div class="feature-desc">Hybrid BM25+dense, Multi-Vector with MMR reranking, and Self-Querying multi-hop. Query complexity drives strategy selection automatically.</div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon yellow">⚡</div>
+            <div class="feature-num">02 — CACHING</div>
+            <div class="feature-title">Semantic Cache</div>
+            <div class="feature-desc">Cosine similarity lookup against cached embeddings. Configurable threshold (default 0.92). Namespace-scoped — no cross-tenant leakage.</div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon blue">🏢</div>
+            <div class="feature-num">03 — ISOLATION</div>
+            <div class="feature-title">Namespace Isolation</div>
+            <div class="feature-desc">Each namespace is an isolated ChromaDB collection. Shared-secret auth with per-namespace rate limiting via token bucket.</div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon green">📊</div>
+            <div class="feature-num">04 — OBSERVABILITY</div>
+            <div class="feature-title">Prometheus + Grafana</div>
+            <div class="feature-desc">Cache hit rate, per-tier latency histograms, token usage by namespace and model, ingestion throughput — pre-built dashboard included.</div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon purple">🔌</div>
+            <div class="feature-num">05 — SDK</div>
+            <div class="feature-title">Python SDK</div>
+            <div class="feature-desc">pip-installable keiro-client with query(), ingest(), and job_status(). Pydantic models. Clean exception hierarchy. 5-line quickstart.</div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon orange">🚀</div>
+            <div class="feature-num">06 — DEPLOYMENT</div>
+            <div class="feature-title">Zero-Config Deploy</div>
+            <div class="feature-desc">docker compose up starts everything. Set KEIRO_SECRET and KEIRO_EMBEDDING_MODEL=local in .env. No cloud account needed.</div>
+        </div>
+    </div>
+</section>
+
+<!-- Links -->
+<section class="links-section">
+    <a href="https://github.com/ManasRanjanJena253/Keiro" target="_blank" class="link-card">
+        <div class="link-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--text-secondary)"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+        </div>
+        <div class="link-card-text">
+            <strong>GitHub Repository</strong>
+            <span>ManasRanjanJena253/Keiro — source code, docs, benchmarks</span>
+        </div>
+        <span class="link-card-arrow">→</span>
+    </a>
+
+    <a href="https://arxiv.org/abs/2506.XXXXX" target="_blank" class="link-card">
+        <div class="link-card-icon">📄</div>
+        <div class="link-card-text">
+            <strong>arXiv Preprint</strong>
+            <span>Keiro: Adaptive RAG Infrastructure with Domain-Aware Strategy Selection — coming soon</span>
+        </div>
+        <span class="link-card-arrow">→</span>
+    </a>
+
+    <a href="/query" class="link-card">
+        <div class="link-card-icon">🔍</div>
+        <div class="link-card-text">
+            <strong>Query Interface</strong>
+            <span>Submit queries and see adaptive retrieval in action</span>
+        </div>
+        <span class="link-card-arrow">→</span>
+    </a>
+
+    <a href="/health-ui" class="link-card">
+        <div class="link-card-icon">📊</div>
+        <div class="link-card-text">
+            <strong>System Health</strong>
+            <span>Live service status, cache metrics, and infrastructure health</span>
+        </div>
+        <span class="link-card-arrow">→</span>
+    </a>
+</section>
+
+<footer class="landing-footer">
+    <div class="footer-brand">
+        <div class="nav-logo" style="width:24px;height:24px;font-size:0.7rem;">K</div>
+        <span>Keiro © 2025 &nbsp;·&nbsp; MIT License</span>
+    </div>
+    <div class="footer-links">
+        <a href="/query">Query</a>
+        <a href="/ingest">Ingest</a>
+        <a href="/health-ui">Health</a>
+        <a href="https://github.com/ManasRanjanJena253/Keiro" target="_blank">GitHub</a>
+        <a href="https://arxiv.org/abs/2506.XXXXX" target="_blank">arXiv</a>
+    </div>
+    <span>Built with <span class="go" style="color:var(--go-cyan);font-weight:600;">Go</span> + <span class="py" style="color:var(--python-blue);font-weight:600;">Python</span></span>
+</footer>
+
+</body>
+</html>

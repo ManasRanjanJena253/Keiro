@@ -14,5 +14,7 @@ RUN apt-get update \
 RUN adduser --disabled-password --gecos "" keiro
 WORKDIR /app
 COPY --from=builder --chown=keiro:keiro /app/keiro-gateway .
+COPY --from=builder --chown=keiro:keiro /app/templates ./templates
+COPY --from=builder --chown=keiro:keiro /app/static ./static
 USER keiro
 ENTRYPOINT ["/app/keiro-gateway"]

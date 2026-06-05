@@ -8,10 +8,10 @@ import (
 type HealthStatusResponse struct {
 	GatewayUp           bool    `json:"gateway_up"`
 	IntelligenceUp      bool    `json:"intelligence_up"`
-	ChromaUP            bool    `json:"chroma_up"`
+	ChromaUP            bool    `json:"chromadb_up"`
 	GatewayLatency      string  `json:"gateway_latency"`
 	IntelligenceLatency string  `json:"intelligence_latency"`
-	ChromaLatency       string  `json:"chroma_latency"`
+	ChromaLatency       string  `json:"chromadb_latency"`
 	CacheSize           string  `json:"cache_size"`
 	CacheHitRate        string  `json:"cache_hit_rate"`
 	CacheHitRatePCT     float32 `json:"cache_hit_rate_pct"`

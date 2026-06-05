@@ -44,7 +44,8 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 
 	mainRouter.Handle("/static/*", StaticFileHandler())
 
-	mainRouter.Get("/", ServeUIPage("query.html"))
+	mainRouter.Get("/", ServeUIPage("index.html"))
+	mainRouter.Get("/query", ServeUIPage("query.html"))
 	mainRouter.Get("/ingest", ServeUIPage("ingest.html"))
 	mainRouter.Get("/health-ui", ServeUIPage("health.html"))
 

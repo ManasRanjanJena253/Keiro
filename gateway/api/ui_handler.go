@@ -23,5 +23,5 @@ func StaticFileHandler() http.Handler {
 	if staticDir == "" {
 		staticDir = "static"
 	}
-	return http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir)))
+	return http.FileServer(http.Dir(staticDir))
 }

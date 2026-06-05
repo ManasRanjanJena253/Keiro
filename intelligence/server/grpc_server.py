@@ -25,7 +25,7 @@ import rag_pb2_grpc
 from concurrent import futures
 
 class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
-    def __init__(self, pipeline: IngestionPipeline, classifier: ClassifyQuery, simple_retriever: SimpleRetriever, complex_retriever: ComplexRetriever, multi_hop_retriever: MultiHopRetriever, openai: OpenaiLLM, gemini: GeminiLLM, embedder: BaseEmbedder):
+    def __init__(self, pipeline: IngestionPipeline, classifier: ClassifyQuery, simple_retriever: SimpleRetriever, complex_retriever: ComplexRetriever, multi_hop_retriever: MultiHopRetriever, openai: OpenaiLLM, gemini: GeminiLLM, embedder: BaseEmbedder, ollama: OpenAI):
         self.pipeline = pipeline
         self.classifier = classifier
         self.simple = simple_retriever
@@ -34,6 +34,7 @@ class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
         self.openai = openai
         self.gemini = gemini
         self.embedder = embedder
+        self.ollama = ollama
 
     def ComputeEmbeddings(self, request, context):
         try:
@@ -117,7 +118,7 @@ class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
         namespace = request.namespace
         chunks = [chunk.text for chunk in request.retrieved_chunk]
 
-        response = self.gemini.get_response(query, chunks)  # Currently using the gemini llm only because of higher rate limits
+        response = self.ollama.get_response(query, chunks)  # Currently using the gemini llm only because of higher rate limits
 
         return rag_pb2.GeneratedResponse(
             response = response["response"],
@@ -167,8 +168,8 @@ def serve():
     else:
         embedder = LocalEmbedder()
 
-    chunk_size = int(os.getenv("KEIRO_CHUNK_SIZE", "512"))
-    overlap = int(os.getenv("KEIRO_OVERLAP", "100"))
+    chunk_size = int(os.getenv("KEIRO_CHUNK_SIZE", "1024"))
+    overlap = int(os.getenv("KEIRO_OVERLAP", "150"))
 
     chunker = Chunker(embedder, chunk_size, overlap)
 
@@ -178,16 +179,23 @@ def serve():
     if llm_provider == "gemini":
         gemini_model = os.getenv("KEIRO_GEMINI_MODEL_NAME")
         gemini_client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+        classifier = ClassifyQuery(client = gemini_client, model_name = gemini_model)
 
     elif llm_provider == "openai":
         openai_model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
         openai_client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+        classifier = ClassifyQuery(client = openai_client, model_name = openai_model)
 
+    elif llm_provider == "ollama":
+        ollama_model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
+        model_url = os.getenv("KEIRO_OLLAMA_URL")
+        openai_client = OpenaiLLM(
+            base_url = model_url
+        )
+        classifier = ClassifyQuery(client = openai_client, model_name = ollama_model)
 
     else:
         raise ValueError(f"Unsupported LLM provider: {llm_provider}. Must be 'gemini' or 'openai'")
-
-    classifier = ClassifyQuery(client = gemini_client, model_name = gemini_model)
 
     simple_retriever = SimpleRetriever(store = store, embedder = embedder)
 
@@ -201,9 +209,15 @@ def serve():
     openai_model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
     openai = OpenaiLLM(openai_client, openai_model)
 
+    ollama_model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
+    model_url = os.getenv("KEIRO_OLLAMA_URL")
+    ollama_client = OpenaiLLM(
+        base_url = model_url
+    )
+
     gemini = GeminiLLM(gemini_client, gemini_model)
 
-    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, gemini = gemini, openai = openai, embedder = embedder), server)
+    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, gemini = gemini, openai = openai, embedder = embedder, ollama = ollama_client), server)
     server.add_insecure_port(f"{HOST}:{PORT}")
     print(f"Starting the server at port {HOST}:{PORT}")
     server.start()

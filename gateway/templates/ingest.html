@@ -14,8 +14,9 @@
         <span class="nav-wordmark">Kei<em>ro</em></span>
     </a>
     <div class="nav-links">
-        <a href="/gateway/static" class="nav-link">Query</a>
-        <a href="/ingest" class="nav-link active">Ingest</a>
+        <a href="/" class="nav-link">Home</a>
+        <a href="/ingest" class="nav-link">Ingest</a>
+        <a href="/query" class="nav-link">Query</a>
         <a href="/health-ui" class="nav-link">Health</a>
     </div>
     <div class="nav-right">
@@ -142,8 +143,8 @@
         try {
             const data = await KEIRO.ingest(formData, namespace);
             currentJobNamespace = namespace;
-            renderJobStatus(data.JobId, data.JobStatus, '');
-            startPolling(data.JobId);
+            renderJobStatus(data.job_id, data.job_status, '');
+            startPolling(data.job_id);
         } catch (err) {
             document.getElementById('job-status-area').innerHTML = `
             <div class="card fade-up" style="border-color:var(--error);">
@@ -153,7 +154,6 @@
             btn.disabled = false;
             loading.classList.remove('visible');
         }
-    }
 
     function startPolling(jobId) {
         clearPoll();

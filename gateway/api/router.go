@@ -5,6 +5,7 @@ import (
 	"Keiro/gateway/middleware"
 	"Keiro/gateway/queue"
 	pb "Keiro/generated/go/proto"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -42,7 +43,7 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 	v1Router.Post("/ingest", ingestHandler.IngestUserDoc)
 	v1Router.Get("/jobs/{job_id}", jobHandler.UserJobHandler)
 
-	mainRouter.Handle("/static/*", StaticFileHandler())
+	mainRouter.Handle("/static/*", http.StripPrefix("/static", StaticFileHandler()))
 
 	mainRouter.Get("/", ServeUIPage("index.html"))
 	mainRouter.Get("/query", ServeUIPage("query.html"))

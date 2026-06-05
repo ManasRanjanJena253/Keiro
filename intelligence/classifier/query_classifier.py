@@ -12,7 +12,7 @@ class ResponseSchema(BaseModel):
 class ClassifyQuery:
     def __init__(self, client: Union[genai.Client, OpenAI], model_name: str, model_provider: Literal["openai", "gemini", "ollama"]):
         self.client = client
-        self.llm_provider = model_provider
+        self.model_provider = model_provider
 
         prompt_path = Path(__file__).parent / "classifier_system_prompt.txt"
         try:
@@ -52,7 +52,7 @@ class ClassifyQuery:
                 )
             return classified_query
 
-        elif self.model_proviedr in  ["openai", "ollama"]:
+        elif self.model_provider in  ["openai", "ollama"]:
             try:
                 response = self.client.chat.completions.create(
                     model = self.model,
@@ -81,6 +81,3 @@ class ClassifyQuery:
                     query_type = "simple",
                     domain = None
                 )
-
-
-

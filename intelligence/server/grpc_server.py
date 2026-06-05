@@ -1,5 +1,7 @@
 import sys
 import os
+from typing import Union
+
 from dotenv import load_dotenv
 from google import genai
 from sentence_transformers import CrossEncoder
@@ -25,16 +27,14 @@ import rag_pb2_grpc
 from concurrent import futures
 
 class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
-    def __init__(self, pipeline: IngestionPipeline, classifier: ClassifyQuery, simple_retriever: SimpleRetriever, complex_retriever: ComplexRetriever, multi_hop_retriever: MultiHopRetriever, openai: OpenaiLLM, gemini: GeminiLLM, embedder: BaseEmbedder, ollama: OpenAI):
+    def __init__(self, pipeline: IngestionPipeline, classifier: ClassifyQuery, simple_retriever: SimpleRetriever, complex_retriever: ComplexRetriever, multi_hop_retriever: MultiHopRetriever, embedder: BaseEmbedder, llm_client: Union[GeminiLLM, OpenaiLLM]):
         self.pipeline = pipeline
         self.classifier = classifier
         self.simple = simple_retriever
         self.complex = complex_retriever
         self.multi_hop = multi_hop_retriever
-        self.openai = openai
-        self.gemini = gemini
+        self.llm_client = llm_client
         self.embedder = embedder
-        self.ollama = ollama
 
     def ComputeEmbeddings(self, request, context):
         try:
@@ -60,7 +60,7 @@ class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
                     retrieval_type = retrieval_type,
                     top_k = strategy_config["top_k"],
                     rerank = strategy_config["rerank"],
-                    decompose = strategy_config["decompose"],
+                    decompose = strategy_config["decompose"]
                 )
             )
         except Exception as e:
@@ -77,7 +77,7 @@ class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
         retrieval_type = config.retrieval_type
 
         try:
-            if retrieval_type in (rag_pb2.RetrievalType.HYBRID, rag_pb2.RetrievalType. RETRIEVAL_TYPE_UNSPECIFIED):
+            if retrieval_type in (rag_pb2.RetrievalType.HYBRID, rag_pb2.RetrievalType.RETRIEVAL_TYPE_UNSPECIFIED):
                 chunks = self.simple.retrieve_top_k(namespace, top_k, query)
 
             elif retrieval_type == rag_pb2.RetrievalType.MULTI_VECTOR:
@@ -118,7 +118,7 @@ class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
         namespace = request.namespace
         chunks = [chunk.text for chunk in request.retrieved_chunk]
 
-        response = self.ollama.get_response(query, chunks)  # Currently using the gemini llm only because of higher rate limits
+        response = self.llm_client.get_response(query, chunks)  # Currently using the gemini llm only because of higher rate limits
 
         return rag_pb2.GeneratedResponse(
             response = response["response"],
@@ -156,7 +156,7 @@ def serve():
     store = ChromaStore(host = chroma_host, port = chroma_port)
 
     embedder_type = os.getenv("KEIRO_EMBEDDING_MODEL")
-    embedder = BaseEmbedder()
+    embedder = None
 
     if embedder_type == "local":
         embedder = LocalEmbedder()
@@ -177,47 +177,37 @@ def serve():
 
     llm_provider = os.getenv("KEIRO_LLM_PROVIDER")
     if llm_provider == "gemini":
-        gemini_model = os.getenv("KEIRO_GEMINI_MODEL_NAME")
-        gemini_client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
-        classifier = ClassifyQuery(client = gemini_client, model_name = gemini_model)
+        model = os.getenv("KEIRO_GEMINI_MODEL_NAME")
+        client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+        llm_client = GeminiLLM(client = client, model_name = model)
 
     elif llm_provider == "openai":
-        openai_model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
-        openai_client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
-        classifier = ClassifyQuery(client = openai_client, model_name = openai_model)
+        model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
+        client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+        llm_client = OpenaiLLM(client = client, model_name = model)
 
     elif llm_provider == "ollama":
-        ollama_model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
+        model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
         model_url = os.getenv("KEIRO_OLLAMA_URL")
-        openai_client = OpenaiLLM(
+        client = OpenAI(
             base_url = model_url
         )
-        classifier = ClassifyQuery(client = openai_client, model_name = ollama_model)
+        llm_client = OpenaiLLM(client = client, model_name = model)
 
     else:
         raise ValueError(f"Unsupported LLM provider: {llm_provider}. Must be 'gemini' or 'openai'")
 
     simple_retriever = SimpleRetriever(store = store, embedder = embedder)
 
+    classifier = ClassifyQuery(client = client, model_name = model, model_provider = llm_provider)
+
     cross_encoder_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
     cross_encoder = CrossEncoderReranker(cross_encoding_model = cross_encoder_model)
-    complex_retriever = ComplexRetriever(store = store, embedder = embedder, client = gemini_client, cross_encoder = cross_encoder, model_name = gemini_model, mmr_lambda = float(os.getenv("KEIRO_MMR_RETRIEVAL_LAMBDA")))
+    complex_retriever = ComplexRetriever(store = store, embedder = embedder, client = client, cross_encoder = cross_encoder, model_name = model, mmr_lambda = float(os.getenv("KEIRO_MMR_RETRIEVAL_LAMBDA")), model_provider = llm_provider)
 
-    multi_hop_retriever = MultiHopRetriever(embedder = embedder, store = store, client = gemini_client, model_name = gemini_model, num_hops = 3)
+    multi_hop_retriever = MultiHopRetriever(embedder = embedder, store = store, client = client, model_name = model, num_hops = 3, model_provider = llm_provider)
 
-    openai_client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
-    openai_model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
-    openai = OpenaiLLM(openai_client, openai_model)
-
-    ollama_model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
-    model_url = os.getenv("KEIRO_OLLAMA_URL")
-    ollama_client = OpenaiLLM(
-        base_url = model_url
-    )
-
-    gemini = GeminiLLM(gemini_client, gemini_model)
-
-    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, gemini = gemini, openai = openai, embedder = embedder, ollama = ollama_client), server)
+    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, embedder = embedder, llm_client = llm_client), server)
     server.add_insecure_port(f"{HOST}:{PORT}")
     print(f"Starting the server at port {HOST}:{PORT}")
     server.start()

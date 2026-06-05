@@ -2,8 +2,8 @@ from .base_llm import BaseLLM
 from openai import OpenAI
 
 class OpenaiLLM(BaseLLM):
-    def __init__(self, openai_client: OpenAI, model_name: str):
-        super().__init__(client = openai_client, model_name = model_name)
+    def __init__(self, client: OpenAI, model_name: str):
+        super().__init__(client = client, model_name = model_name)
 
     def get_response(self, query: str, chunks: list[str]):
         chunks_str = "\n".join(chunks)

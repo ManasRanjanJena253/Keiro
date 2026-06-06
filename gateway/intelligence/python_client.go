@@ -83,7 +83,7 @@ func ExecuteRetrieval(client pb.IntelligenceServiceClient, query string, config 
 }
 
 func GenerateResponse(client pb.IntelligenceServiceClient, namespace string, query string, retrieved_chunk []*pb.RetrievedChunk) (*pb.GeneratedResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*25)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
 
 	req := &pb.GenerateResponseRequest{

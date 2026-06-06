@@ -117,7 +117,6 @@ wandb/
 # Benchmarks output (both projects)
 # ============================================================
 benchmarks/results/*.json
-benchmarks/results/*.png
 benchmarks/results/*.csv
 
 # ============================================================
@@ -129,3 +128,5 @@ desktop.ini
 
 tests.http
 EU_AI_Act.pdf
+benchmarks/rag_response_generator.py
+benchmarks/adaptive_rag_response_generator.py

@@ -30,7 +30,7 @@ The result is a system that spends computation proportionally to query difficult
 
 ## Architecture
 
-```mermaid
+```text
                     ┌─────────────────────────────────────────────┐
                     │               Go API Gateway                │
   HTTP Request  ──► │                                             │

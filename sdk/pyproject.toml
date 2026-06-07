@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keiro-client"
+version = "0.1.0"
+description = "Python client SDK for Keiro — self-hostable adaptive RAG infrastructure"
+readme = "README.md"
+license = { file = "LICENSE.md" }
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27.0",
+    "pydantic>=2.7.0",
+]
+
+[project.urls]
+Repository = "https://github.com/ManasRanjanJena253/Keiro"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["keiro*"]

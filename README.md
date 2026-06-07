@@ -5,7 +5,7 @@
 ![gRPC](https://img.shields.io/badge/gRPC-proto3-244c5a?style=flat)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat&logo=docker&logoColor=white)
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-vector%20store-FF6B35?style=flat)
-![Redis](https://img.shields.io/badge/Redis-semantic%20cache-DC382D?style=flat&logo=redis&logoColor=white)
+![Cache](https://img.shields.io/badge/Cache-hashicorp%20LRU-00ADD8?style=flat&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat)
 
 > *From Japanese 経路 (keiro) — path, route.*
@@ -41,7 +41,7 @@ The result is a system that spends computation proportionally to query difficult
                     │                       │                     │
                     │             ┌─────────▼─────────┐           │
                     │             │  Semantic Cache   │           │
-                    │             │(Redis+cosine sim) │           │
+                    │             │(LRU+cosine sim)   │           │
                     │             └─────────┬─────────┘           │
                     │                  miss │                     │
                     │             ┌─────────▼─────────┐           │
@@ -171,7 +171,13 @@ Evaluated on 50 questions across three complexity tiers derived from the EU AI A
 
 ![Figure 6: Routing accuracy](benchmarks/results/fig6_routing_accuracy.png)
 
-*Simple (100%) and multi-hop (70%) tiers are classified reliably. The complex tier collapses to multi-hop routing — a known structural issue. Complex synthesis questions and multi-hop reasoning questions are adjacent in semantic space. Routing complex queries to multi-hop is the safer failure mode: it over-retrieves rather than under-retrieves.*
+*Simple queries are classified with perfect accuracy (100%). Complex queries
+are correctly routed 60% of the time, with the remaining 40% over-routed to
+multi-hop. Multi-hop queries are the hardest to classify reliably (10%), as
+chained reasoning questions sit close to complex synthesis questions in
+semantic space and are frequently conflated. Over-routing to complex is the
+safer failure mode — it over-retrieves with reranking rather than
+under-retrieves.*
 
 ### Summary
 
@@ -181,23 +187,24 @@ Evaluated on 50 questions across three complexity tiers derived from the EU AI A
 | Context recall Δ (multi-hop) | **+9.4pp** | **+6.7pp** |
 | Faithfulness Δ (overall) | −10.4pp | −7.7pp |
 | Token reduction (simple tier) | **−49%** | **−49%** |
-| Classifier accuracy (simple) | 100% | 100% |
-| Classifier accuracy (multi-hop) | 70% | 70% |
+| Classifier accuracy (simple)    | 100%  | 100%  |
+| Classifier accuracy (complex)   | 60%   | 60%   |
+| Classifier accuracy (multi-hop) | 10%   | 10%   |
 
 ---
 
 ## Stack
 
-| Component | Role |
-|-----------|------|
-| Go 1.22+ | API gateway, cache, rate limiter, job queue, observability |
-| Python 3.11+ | Classifier, retrievers, embeddings, reranker, LLM calls |
-| protobuf 3 | Explicit versioned Go ↔ Python contract |
-| ChromaDB | Vector store, runs as a container |
-| Redis | Semantic cache backing store with TTL |
-| Prometheus + Grafana | Metrics; pre-built dashboard loaded on `compose up` |
-| `sentence-transformers` | `all-MiniLM-L6-v2` embeddings (zero API key required); `ms-marco-MiniLM-L6-v2` reranking |
-| `google-generativeai` | LLM calls via direct SDK |
+| Component                           | Role |
+|-------------------------------------|------|
+| Go 1.22+                            | API gateway, cache, rate limiter, job queue, observability |
+| Python 3.11+                        | Classifier, retrievers, embeddings, reranker, LLM calls |
+| protobuf 3                          | Explicit versioned Go ↔ Python contract |
+| ChromaDB                            | Vector store, runs as a container |
+| `hashicorp/golang-lru` + `sync.Map` | In-process semantic cache with TTL and LRU eviction — no external dependency |
+| Prometheus + Grafana                | Metrics; pre-built dashboard loaded on `compose up` |
+| `sentence-transformers`             | `all-MiniLM-L6-v2` embeddings (zero API key required); `ms-marco-MiniLM-L6-v2` reranking |
+| `google.genai`                      | LLM calls via direct SDK |
 
 ---
 
@@ -213,7 +220,7 @@ cp .env.example .env
 docker compose up
 ```
 
-The stack starts: Go gateway (`:8080`), Python intelligence layer (`:28080`), ChromaDB (`:7777`), Redis, Prometheus (`:9090`), Grafana (`:3000`).
+The stack starts: Go gateway (`:8080`), Python intelligence layer (`:28080`), ChromaDB (`:7777`), Prometheus (`:9090`), Grafana (`:3000`).
 
 **Ingest a document:**
 

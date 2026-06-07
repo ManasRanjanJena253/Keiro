@@ -130,3 +130,5 @@ tests.http
 EU_AI_Act.pdf
 benchmarks/rag_response_generator.py
 benchmarks/adaptive_rag_response_generator.py
+Basel_III.pdf
+benchmarks/results/v1

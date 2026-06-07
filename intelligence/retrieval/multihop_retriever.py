@@ -68,7 +68,7 @@ class MultiHopRetriever(BaseRetriever):
         seen = set()
         cleaned_chunks = []
         for chunk in all_chunks:
-            if chunk not in seen:
+            if chunk not in seen and len(chunk.strip()) > 30:
                 seen.add(chunk)
                 cleaned_chunks.append(chunk)
 

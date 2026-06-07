@@ -8,195 +8,178 @@
 </head>
 <body>
 
-    <!-- Outer Decorative Border for Cyberpunk Aesthetics -->
-    <div class="cyber-grid-overlay"></div>
+<!-- Outer Decorative Border for Cyberpunk Aesthetics -->
+<div class="cyber-grid-overlay"></div>
 
-    <!-- Hidden element that informs app.js to initialize dashboard logic -->
-    <div id="dashboard-view-trigger" style="display: none;"></div>
+<!-- Hidden element that informs app.js to initialize dashboard logic -->
+<div id="dashboard-view-trigger" style="display: none;"></div>
 
-    <!-- ── TOP STATUS BAR ── -->
-    <header class="top-status-bar">
-        <div class="status-indicators-group">
-            <div class="status-indicator">
-                <span id="gw-dot" class="status-dot up"></span>
-                <span>Gateway <span id="gw-latency">18ms</span></span>
-            </div>
-            <div class="status-indicator">
-                <span id="intel-dot" class="status-dot up"></span>
-                <span>Intelligence <span id="intel-latency">23ms</span></span>
-            </div>
-            <div class="status-indicator">
-                <span id="chroma-dot" class="status-dot up"></span>
-                <span>ChromaDB <span id="chroma-latency">42ms</span></span>
-            </div>
+<!-- ── TOP STATUS BAR ── -->
+<header class="top-status-bar">
+    <div class="status-indicators-group">
+        <div class="status-indicator">
+            <span id="gw-dot" class="status-dot up"></span>
+            <span>Gateway <span id="gw-latency">18ms</span></span>
         </div>
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <div class="status-indicator" style="text-transform: none;">
-                Namespace: <span id="active-namespace" style="color: var(--color-accent); font-weight: bold;">research</span>
-            </div>
-            <!-- Gear Icon for settings -->
-            <button id="gear-icon" style="background: none; border: none; cursor: pointer; display: flex; align-items: center;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </button>
+        <div class="status-indicator">
+            <span id="intel-dot" class="status-dot up"></span>
+            <span>Intelligence <span id="intel-latency">23ms</span></span>
         </div>
-    </header>
+        <div class="status-indicator">
+            <span id="chroma-dot" class="status-dot up"></span>
+            <span>ChromaDB <span id="chroma-latency">42ms</span></span>
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="status-indicator" style="text-transform: none;">
+            Namespace: <span id="active-namespace" style="color: var(--color-accent); font-weight: bold;">default_1</span>
+        </div>
+        <!-- Gear Icon for settings -->
+        <button id="gear-icon" style="background: none; border: none; cursor: pointer; display: flex; align-items: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </button>
+    </div>
+</header>
 
-    <main class="container" style="padding-top: 1.5rem;">
-        <div class="dashboard-layout">
-            
-            <!-- ── LEFT COLUMN: INGEST ── -->
-            <section class="cyber-card">
-                <h2 class="card-title">INGEST</h2>
-                
-                <div class="field">
-                    <div class="drop-zone" id="drop-zone">
-                        <input type="file" id="file-input" accept=".pdf,.txt,.zip" />
-                        <div class="drop-zone-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 19V5M5 12l7-7 7 7"></path>
-                            </svg>
-                        </div>
-                        <div class="drop-zone-title">Drag & drop files here</div>
-                        <div class="drop-zone-sub">Supports PDF, TXT or ZIP documents</div>
+<main class="container" style="padding-top: 1.5rem;">
+    <div class="dashboard-layout">
+
+        <!-- ── LEFT COLUMN: INGEST ── -->
+        <section class="cyber-card">
+            <h2 class="card-title">INGEST</h2>
+
+            <div class="field">
+                <div class="drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept=".pdf,.txt,.zip" multiple />
+                    <div class="drop-zone-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 19V5M5 12l7-7 7 7"></path>
+                        </svg>
                     </div>
-                    <!-- Selected File Banner -->
-                    <div id="file-chosen-banner" class="file-chosen-banner">
-                        <span>✓</span>
-                        <span id="file-name-display"></span>
-                    </div>
+                    <div class="drop-zone-title">Drag & drop files here</div>
+                    <div class="drop-zone-sub">Supports PDF, TXT or ZIP · Multiple files allowed</div>
+                </div>
+                <!-- Selected File Banner -->
+                <div id="file-chosen-banner" class="file-chosen-banner">
+                    <span>✓</span>
+                    <span id="file-name-display"></span>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Chunking Strategy</label>
+                <select id="chunk-strategy">
+                    <option value="0">Default</option>
+                    <option value="1">Fixed Size</option>
+                    <option value="2">Structural</option>
+                    <option value="3">Semantic</option>
+                </select>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <button id="start-ingest-btn" class="btn btn-outline" style="width: 100%;">START INGEST ></button>
+                <div id="ingest-loading" class="loading-row">
+                    <div class="spinner-icon"></div>
+                    <span>Uploading document and initiating pipelines...</span>
+                </div>
+            </div>
+
+            <!-- Job Status Section (Hidden by default, displayed flex during status updates) -->
+            <div id="job-status-panel" class="cyber-card" style="margin-top: 2rem; display: none; flex-direction: column; gap: 0.4rem; border-color: var(--border-dark);">
+                <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 0.7rem;">JOB STATUS</h3>
+                <div id="job-cards-container" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+            </div>
+        </section>
+
+        <!-- ── RIGHT COLUMN: QUERY ── -->
+        <section class="cyber-card">
+            <h2 class="card-title">QUERY</h2>
+
+            <div class="field">
+                <textarea id="query-input" placeholder="Ask anything about your data..."></textarea>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <button id="run-query-btn" class="btn btn-outline" style="width: 100%;">RUN QUERY ></button>
+                <div id="query-loading" class="loading-row">
+                    <div class="spinner-icon"></div>
+                    <span>Invoking retrieval & executing RAG reasoning...</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 2.25rem;">
+                <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 0.7rem;">RESPONSE</h3>
+                <div id="response-container" class="response-container">Awaiting strategy classification & retrieval...</div>
+                <div class="response-footer-bar">
+                    <div>TIER | <span id="meta-tier" class="highlight">—</span></div>
+                    <div>CACHE | <span id="meta-cache" class="highlight">—</span></div>
+                    <div>LATENCY | <span id="meta-latency" class="highlight">—</span></div>
                 </div>
 
-                <div class="field">
-                    <label>Chunking Strategy</label>
-                    <select id="chunk-strategy">
-                        <option value="0">Default</option>
-                        <option value="1">Fixed Size</option>
-                        <option value="2">Structural</option>
-                        <option value="3">Semantic</option>
-                    </select>
-                </div>
-
-                <div style="margin-top: 1.5rem;">
-                    <button id="start-ingest-btn" class="btn btn-outline" style="width: 100%;">START INGEST ></button>
-                    <div id="ingest-loading" class="loading-row">
-                        <div class="spinner-icon"></div>
-                        <span>Uploading document and initiating pipelines...</span>
+                <!-- Cyber Diagnostic Telemetry Panel -->
+                <div id="telemetry-panel" class="job-status-info" style="margin-top: 1rem; display: none;">
+                    <div class="info-row">
+                        <span class="info-label">MODEL</span>
+                        <span id="telemetry-model" class="info-val">—</span>
                     </div>
-                </div>
-
-                <!-- Job Status Section (Hidden by default, displayed flex during status updates) -->
-                <div id="job-status-panel" class="cyber-card" style="margin-top: 2rem; display: none; flex-direction: column; gap: 0.8rem; border-color: var(--border-dark);">
-                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 0.7rem;">JOB STATUS</h3>
-                    
-                    <div class="job-status-info">
-                        <div class="info-row">
-                            <span class="info-label">JOB ID</span>
-                            <span id="job-id-val" class="info-val" style="font-family: var(--font-mono); font-size: 0.72rem; word-break: break-all;">—</span>
-                        </div>
-                        <div class="info-row" style="margin-top: 0.5rem;">
-                            <span class="info-label">STATUS</span>
-                            <span style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span id="job-status-dot" class="status-dot warning"></span>
-                                <span id="job-state-val" class="info-val">—</span>
-                            </span>
-                        </div>
-                        <div class="info-row" style="margin-top: 0.5rem;">
-                            <span class="info-label">TIME</span>
-                            <span id="job-elapsed-val" class="info-val" style="color: var(--text-secondary);">—</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ── RIGHT COLUMN: QUERY ── -->
-            <section class="cyber-card">
-                <h2 class="card-title">QUERY</h2>
-                
-                <div class="field">
-                    <textarea id="query-input" placeholder="Ask anything about your data..."></textarea>
-                </div>
-
-                <div style="margin-top: 1.5rem;">
-                    <button id="run-query-btn" class="btn btn-outline" style="width: 100%;">RUN QUERY ></button>
-                    <div id="query-loading" class="loading-row">
-                        <div class="spinner-icon"></div>
-                        <span>Invoking retrieval & executing RAG reasoning...</span>
-                    </div>
-                </div>
-
-                <div style="margin-top: 2.25rem;">
-                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 0.7rem;">RESPONSE</h3>
-                    <div id="response-container" class="response-container">Awaiting strategy classification & retrieval...</div>
-                    <div class="response-footer-bar">
-                        <div>TIER | <span id="meta-tier" class="highlight">—</span></div>
-                        <div>CACHE | <span id="meta-cache" class="highlight">—</span></div>
-                        <div>LATENCY | <span id="meta-latency" class="highlight">—</span></div>
-                    </div>
-
-                    <!-- Cyber Diagnostic Telemetry Panel -->
-                    <div id="telemetry-panel" class="job-status-info" style="margin-top: 1rem; display: none;">
-                        <div class="info-row">
-                            <span class="info-label">MODEL</span>
-                            <span id="telemetry-model" class="info-val">—</span>
-                        </div>
-                        <div class="info-row" style="margin-top: 0.4rem;">
-                            <span class="info-label">TOKENS (PROMPT / COMP / TOTAL)</span>
-                            <span class="info-val">
+                    <div class="info-row" style="margin-top: 0.4rem;">
+                        <span class="info-label">TOKENS (PROMPT / COMP / TOTAL)</span>
+                        <span class="info-val">
                                 <span id="telemetry-prompt-tokens" style="color: var(--text-primary);">0</span> /
                                 <span id="telemetry-completion-tokens" style="color: var(--text-primary);">0</span> /
                                 <span id="telemetry-total-tokens" style="color: var(--color-accent); font-weight: bold;">0</span>
                             </span>
+                    </div>
+                    <div id="telemetry-retrieval-section" style="border-top: 1px dashed var(--border-dark); padding-top: 0.4rem; margin-top: 0.4rem;">
+                        <div class="info-row">
+                            <span class="info-label">RETRIEVAL TOP_K</span>
+                            <span id="telemetry-top-k" class="info-val">—</span>
                         </div>
-                        <div id="telemetry-retrieval-section" style="border-top: 1px dashed var(--border-dark); padding-top: 0.4rem; margin-top: 0.4rem;">
-                            <div class="info-row">
-                                <span class="info-label">RETRIEVAL TOP_K</span>
-                                <span id="telemetry-top-k" class="info-val">—</span>
-                            </div>
-                            <div class="info-row" style="margin-top: 0.4rem;">
-                                <span class="info-label">RERANKING PROCESS</span>
-                                <span id="telemetry-rerank" class="info-val">—</span>
-                            </div>
-                            <div class="info-row" style="margin-top: 0.4rem;">
-                                <span class="info-label">QUERY DECOMPOSITION</span>
-                                <span id="telemetry-decompose" class="info-val">—</span>
-                            </div>
+                        <div class="info-row" style="margin-top: 0.4rem;">
+                            <span class="info-label">RERANKING PROCESS</span>
+                            <span id="telemetry-rerank" class="info-val">—</span>
+                        </div>
+                        <div class="info-row" style="margin-top: 0.4rem;">
+                            <span class="info-label">QUERY DECOMPOSITION</span>
+                            <span id="telemetry-decompose" class="info-val">—</span>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
+    </div>
+</main>
+
+<!-- ── CREDENTIALS SETTINGS OVERLAY ── -->
+<div id="settings-modal" class="settings-overlay">
+    <div class="settings-panel">
+        <h2 class="card-title" style="margin-bottom: 1.5rem; font-size: 0.8rem;">CREDENTIALS CONFIGURATION</h2>
+
+        <div class="field">
+            <label>X-Secret</label>
+            <input id="setting-secret" type="password" placeholder="Enter shared api secret" />
         </div>
-    </main>
 
-    <!-- ── CREDENTIALS SETTINGS OVERLAY ── -->
-    <div id="settings-modal" class="settings-overlay">
-        <div class="settings-panel">
-            <h2 class="card-title" style="margin-bottom: 1.5rem; font-size: 0.8rem;">CREDENTIALS CONFIGURATION</h2>
-            
-            <div class="field">
-                <label>X-Secret</label>
-                <input id="setting-secret" type="password" placeholder="Enter shared api secret" />
-            </div>
+        <div class="field">
+            <label>Namespace</label>
+            <input id="setting-namespace" type="text" placeholder="Enter target namespace" />
+        </div>
 
-            <div class="field">
-                <label>Namespace</label>
-                <input id="setting-namespace" type="text" placeholder="Enter target namespace" />
-            </div>
-
-            <div class="cta-row" style="margin-top: 2rem;">
-                <button id="save-settings-btn" class="btn btn-solid" style="flex: 1;">SAVE CONFIG</button>
-                <button id="close-settings-btn" class="btn btn-outline">CLOSE</button>
-            </div>
+        <div class="cta-row" style="margin-top: 2rem;">
+            <button id="save-settings-btn" class="btn btn-solid" style="flex: 1;">SAVE CONFIG</button>
+            <button id="close-settings-btn" class="btn btn-outline">CLOSE</button>
         </div>
     </div>
+</div>
 
-    <footer class="site-footer">
-        Keiro &copy; 2026. Self-hostable Adaptive RAG infrastructure.
-    </footer>
+<footer class="site-footer">
+    Keiro &copy; 2026. Self-hostable Adaptive RAG infrastructure.
+</footer>
 
-    <script src="/static/js/app.js"></script>
+<script src="/static/js/app.js"></script>
 </body>
 </html>

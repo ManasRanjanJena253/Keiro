@@ -39,7 +39,7 @@ class ComplexRetriever(BaseRetriever):
         cleaned_embeddings = []
 
         for doc, embed in zip(all_retrieval, all_embeddings):
-            if doc not in seen:
+            if doc not in seen and len(doc.strip()) > 30:
                 seen.add(doc)
                 cleaned_retrieval.append(doc)
                 cleaned_embeddings.append(embed)
@@ -75,7 +75,7 @@ class ComplexRetriever(BaseRetriever):
         candidate_embeds = np.array(candidate_embeds)
 
         query_norm = query_embed / np.linalg.norm(query_embed)
-        candidate_norms = candidate_embeds / np.linalg.norm(candidate_embeds, axis = 1, keepdims = True) + 1e-9    # Adding this small value to prevent division by zero error
+        candidate_norms = candidate_embeds / (np.linalg.norm(candidate_embeds, axis = 1, keepdims = True) + 1e-9)    # Adding this small value to prevent division by zero error
 
         relevance_scores = candidate_norms @ query_norm
 

@@ -16,10 +16,14 @@ class SimpleRetriever(BaseRetriever):
         query_embed = self.embedder.embed(query)
         dense_result = self.store.query(namespace, top_k, query_embed)
         dense_chunks = dense_result["documents"][0]
+        dense_chunks = [chunk for chunk in dense_chunks if len(chunk.strip()) > 30]
 
         all_chunks_result = self.store.get_all_chunks(namespace)
-        all_docs = all_chunks_result
+        all_docs = [chunk for chunk in all_chunks_result if len(chunk.strip()) > 30]
 
+        if not all_docs:
+            return dense_chunks
+        
         tokenized_corpus = [doc.lower().split() for doc in all_docs]
         tokenized_query = query.lower().split()
         bm25 = BM25Okapi(tokenized_corpus)

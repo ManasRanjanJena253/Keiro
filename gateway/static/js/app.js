@@ -103,6 +103,111 @@ const KEIRO = (() => {
 
 // ── UI Integration Script (For Dashboard) ──
 document.addEventListener('DOMContentLoaded', () => {
+    // ── HELPER: Format file size — shows KB when < 1 MB ──
+    function formatFileSize(bytes) {
+        if (bytes < 1024 * 1024) {
+            return `${(bytes / 1024).toFixed(1)} KB`;
+        }
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    // ── HELPER: Inline markdown (bold, italic, inline code) ──
+    function inlineMarkdown(text) {
+        text = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        // inline code first to avoid interfering with bold/italic
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+        return text;
+    }
+
+    // ── HELPER: Block-level markdown parser ──
+    function parseMarkdown(text) {
+        const lines = text.split('\n');
+        let html = '';
+        let inUL = false, inOL = false, inPre = false, preBuffer = '';
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Fenced code blocks
+            if (/^```/.test(line)) {
+                if (!inPre) {
+                    if (inUL) { html += '</ul>'; inUL = false; }
+                    if (inOL) { html += '</ol>'; inOL = false; }
+                    inPre = true; preBuffer = '';
+                    html += '<pre><code>';
+                } else {
+                    inPre = false;
+                    html += preBuffer
+                            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        + '</code></pre>';
+                }
+                continue;
+            }
+            if (inPre) { preBuffer += line + '\n'; continue; }
+
+            const isULItem = /^[\-\*]\s+/.test(line);
+            const isOLItem = /^\d+\.\s+/.test(line);
+
+            if (!isULItem && inUL) { html += '</ul>'; inUL = false; }
+            if (!isOLItem && inOL) { html += '</ol>'; inOL = false; }
+
+            if (isULItem) {
+                if (!inUL) { html += '<ul>'; inUL = true; }
+                html += '<li>' + inlineMarkdown(line.replace(/^[\-\*]\s+/, '')) + '</li>';
+                continue;
+            }
+            if (isOLItem) {
+                if (!inOL) { html += '<ol>'; inOL = true; }
+                html += '<li>' + inlineMarkdown(line.replace(/^\d+\.\s+/, '')) + '</li>';
+                continue;
+            }
+
+            const hMatch = line.match(/^(#{1,6})\s+(.+)$/);
+            if (hMatch) {
+                html += `<h${hMatch[1].length}>${inlineMarkdown(hMatch[2])}</h${hMatch[1].length}>`;
+                continue;
+            }
+
+            if (/^-{3,}$/.test(line.trim())) { html += '<hr>'; continue; }
+            if (line.trim() === '')          { html += '<br>';  continue; }
+
+            html += '<p>' + inlineMarkdown(line) + '</p>';
+        }
+
+        if (inUL) html += '</ul>';
+        if (inOL) html += '</ol>';
+        // unclosed code block — still render what we have
+        if (inPre) html += preBuffer
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            + '</code></pre>';
+
+        return html;
+    }
+
+    // ── HELPER: Word-by-word typewriter that re-renders markdown each tick ──
+    async function streamMarkdownResponse(container, text) {
+        // Split preserving whitespace tokens so spacing is reconstructed faithfully
+        const tokens = text.split(/(\s+)/);
+        let buffer = '';
+        const WORD_DELAY_MS = 22; // ~45 tokens/s — feels natural, not sluggish
+
+        for (let i = 0; i < tokens.length; i++) {
+            buffer += tokens[i];
+            container.innerHTML = parseMarkdown(buffer);
+            container.scrollTop = container.scrollHeight;
+            await new Promise(r => setTimeout(r, WORD_DELAY_MS));
+        }
+        // Final authoritative render (closes any half-open markdown tokens)
+        container.innerHTML = parseMarkdown(text);
+    }
+
     const isDashboard = document.getElementById('dashboard-view-trigger');
     if (!isDashboard) return;
 
@@ -121,12 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileNameDisplay = document.getElementById('file-name-display');
     const startIngestBtn = document.getElementById('start-ingest-btn');
     const ingestLoading = document.getElementById('ingest-loading');
-    
+
     const jobStatusPanel = document.getElementById('job-status-panel');
-    const jobIdDisplay = document.getElementById('job-id-val');
-    const jobStateDisplay = document.getElementById('job-state-val');
-    const jobDot = document.getElementById('job-status-dot');
-    const jobElapsedDisplay = document.getElementById('job-elapsed-val');
 
     const queryInput = document.getElementById('query-input');
     const runQueryBtn = document.getElementById('run-query-btn');
@@ -154,9 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const chrLat = document.getElementById('chroma-latency');
 
     // ── STATE VARIABLES ──
-    let pollInterval = null;
-    let jobStartTime = 0;
-    let jobElapsedTimer = null;
+    let activeJobs = new Map(); // jobId -> { pollInterval, elapsedTimer }
+    let fileQueue  = [];        // accumulates files across multiple drops / picker opens
 
     // ── FUNCTIONS ──
 
@@ -168,27 +268,103 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeNamespaceDisplay) activeNamespaceDisplay.textContent = namespace || 'not-set';
     }
 
-    // Reset Job status polling
+    // Clear all tracked jobs and hide the panel
     function resetJobTracker() {
-        if (pollInterval) clearInterval(pollInterval);
-        if (jobElapsedTimer) clearInterval(jobElapsedTimer);
-        pollInterval = null;
-        jobElapsedTimer = null;
-        
-        if (jobIdDisplay) jobIdDisplay.textContent = '—';
-        if (jobStateDisplay) jobStateDisplay.textContent = '—';
-        if (jobElapsedDisplay) jobElapsedDisplay.textContent = '—';
-        if (jobDot) {
-            jobDot.className = 'status-dot';
+        for (const { pollInterval, elapsedTimer } of activeJobs.values()) {
+            if (pollInterval) clearInterval(pollInterval);
+            if (elapsedTimer) clearInterval(elapsedTimer);
         }
+        activeJobs.clear();
+        const container = document.getElementById('job-cards-container');
+        if (container) container.innerHTML = '';
         if (jobStatusPanel) jobStatusPanel.style.display = 'none';
     }
 
-    // Health Monitoring background poll
+    // Add a new tracked job card (called once per file)
+    function addJobTracker(jobId, namespace, fileName) {
+        if (jobStatusPanel) jobStatusPanel.style.display = 'flex';
+        const container = document.getElementById('job-cards-container');
+        if (!container) return;
+
+        const card = document.createElement('div');
+        card.className = 'job-status-info';
+        card.id = `job-card-${jobId}`;
+        card.style.cssText = 'border-top: 1px dashed var(--border-dark); padding-top: 0.6rem;';
+        card.innerHTML = `
+            <div class="info-row">
+                <span class="info-label">FILE</span>
+                <span class="info-val" style="word-break:break-all;">${KEIRO.escapeHTML(fileName)}</span>
+            </div>
+            <div class="info-row" style="margin-top:0.4rem;">
+                <span class="info-label">JOB ID</span>
+                <span class="info-val" style="font-family:var(--font-mono);font-size:0.72rem;word-break:break-all;">${KEIRO.escapeHTML(jobId)}</span>
+            </div>
+            <div class="info-row" style="margin-top:0.4rem;">
+                <span class="info-label">STATUS</span>
+                <span style="display:flex;align-items:center;gap:0.4rem;">
+                    <span id="dot-${jobId}" class="status-dot warning"></span>
+                    <span id="state-${jobId}" class="info-val">PENDING</span>
+                </span>
+            </div>
+            <div class="info-row" style="margin-top:0.4rem;">
+                <span class="info-label">TIME</span>
+                <span id="elapsed-${jobId}" class="info-val" style="color:var(--text-secondary);">0s ago</span>
+            </div>`;
+        container.appendChild(card);
+
+        const jobStartTime = Date.now();
+
+        const elapsedTimer = setInterval(() => {
+            const el = document.getElementById(`elapsed-${jobId}`);
+            if (el) el.textContent = `${Math.round((Date.now() - jobStartTime) / 1000)}s ago`;
+        }, 1000);
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const data = await KEIRO.jobStatus(jobId, namespace);
+                const statusMap = { '0': 'PENDING', '1': 'PROCESSING', '2': 'COMPLETED', '3': 'FAILED' };
+                const jobStatusVal = data.job_status !== undefined ? data.job_status : data.JobStatus;
+                const rawStatus = String(jobStatusVal);
+                const statusStr = statusMap[rawStatus] || String(jobStatusVal).toUpperCase();
+
+                const stateEl = document.getElementById(`state-${jobId}`);
+                const dotEl   = document.getElementById(`dot-${jobId}`);
+                if (stateEl) stateEl.textContent = statusStr;
+                if (dotEl) {
+                    dotEl.className = 'status-dot';
+                    if (statusStr === 'COMPLETED' || rawStatus === '2') dotEl.classList.add('up');
+                    else if (statusStr === 'FAILED' || rawStatus === '3') dotEl.classList.add('down');
+                    else dotEl.classList.add('warning');
+                }
+
+                if (['COMPLETED', 'FAILED'].includes(statusStr) || ['2', '3'].includes(rawStatus)) {
+                    const job = activeJobs.get(jobId);
+                    if (job) {
+                        clearInterval(job.pollInterval);
+                        clearInterval(job.elapsedTimer);
+                        activeJobs.delete(jobId);
+                    }
+                }
+            } catch {
+                const stateEl = document.getElementById(`state-${jobId}`);
+                const dotEl   = document.getElementById(`dot-${jobId}`);
+                if (stateEl) stateEl.textContent = 'POLLING ERROR';
+                if (dotEl) dotEl.className = 'status-dot down';
+                const job = activeJobs.get(jobId);
+                if (job) {
+                    clearInterval(job.pollInterval);
+                    clearInterval(job.elapsedTimer);
+                    activeJobs.delete(jobId);
+                }
+            }
+        }, 2000);
+
+        activeJobs.set(jobId, { pollInterval, elapsedTimer });
+    }
     async function updateSystemHealth() {
         try {
             const data = await KEIRO.health();
-            
+
             if (gwDot && gwLat) {
                 gwDot.className = 'status-dot ' + (data.gateway_up ? 'up' : 'down');
                 gwLat.textContent = data.gateway_latency || '< 1ms';
@@ -208,72 +384,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Handle single file selection representation
-    function handleFileSelect() {
-        if (fileInput.files && fileInput.files[0]) {
-            const file = fileInput.files[0];
-            fileNameDisplay.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
-            fileChosenBanner.style.display = 'flex';
-        } else {
+    // Render the current fileQueue into the banner
+    function renderFileQueue() {
+        if (fileQueue.length === 0) {
             fileChosenBanner.style.display = 'none';
+            return;
+        }
+        fileChosenBanner.style.display = 'flex';
+        if (fileQueue.length === 1) {
+            fileNameDisplay.textContent = `${fileQueue[0].name} (${formatFileSize(fileQueue[0].size)})`;
+        } else {
+            fileNameDisplay.textContent =
+                `${fileQueue.length} files queued: ` +
+                fileQueue.map(f => `${f.name} (${formatFileSize(f.size)})`).join(' · ');
         }
     }
 
-    // Start polling active job
-    function trackJobStatus(jobId, namespace) {
-        resetJobTracker();
-        jobStartTime = Date.now();
-        if (jobStatusPanel) jobStatusPanel.style.display = 'flex';
-        if (jobIdDisplay) jobIdDisplay.textContent = jobId;
-        if (jobStateDisplay) jobStateDisplay.textContent = 'PENDING';
-        if (jobDot) {
-            jobDot.className = 'status-dot warning';
-        }
-        if (jobElapsedDisplay) jobElapsedDisplay.textContent = '0s ago';
-
-        // Elapsed time ticker
-        jobElapsedTimer = setInterval(() => {
-            const elapsed = Math.round((Date.now() - jobStartTime) / 1000);
-            if (jobElapsedDisplay) jobElapsedDisplay.textContent = `${elapsed}s ago`;
-        }, 1000);
-
-        // API status poller
-        pollInterval = setInterval(async () => {
-            try {
-                const data = await KEIRO.jobStatus(jobId, namespace);
-                const statusMap = { '0': 'PENDING', '1': 'PROCESSING', '2': 'COMPLETED', '3': 'FAILED' };
-                const jobStatusVal = data.job_status !== undefined ? data.job_status : data.JobStatus;
-                const rawStatus = String(jobStatusVal);
-                const statusStr = statusMap[rawStatus] || String(jobStatusVal).toUpperCase();
-
-                if (jobStateDisplay) jobStateDisplay.textContent = statusStr;
-
-                if (jobDot) {
-                    jobDot.className = 'status-dot';
-                    if (statusStr === 'COMPLETED' || rawStatus === '2') {
-                        jobDot.classList.add('up');
-                    } else if (statusStr === 'FAILED' || rawStatus === '3') {
-                        jobDot.classList.add('down');
-                    } else {
-                        jobDot.classList.add('warning');
-                    }
-                }
-
-                if (statusStr === 'COMPLETED' || statusStr === 'FAILED' || rawStatus === '2' || rawStatus === '3') {
-                    clearInterval(pollInterval);
-                    clearInterval(jobElapsedTimer);
-                    pollInterval = null;
-                    jobElapsedTimer = null;
-                }
-            } catch {
-                clearInterval(pollInterval);
-                clearInterval(jobElapsedTimer);
-                pollInterval = null;
-                jobElapsedTimer = null;
-                if (jobStateDisplay) jobStateDisplay.textContent = 'POLLING ERROR';
-                if (jobDot) jobDot.className = 'status-dot down';
+    // Merge new files into the queue, skipping exact duplicates (name + size)
+    function addFilesToQueue(newFiles) {
+        for (const f of Array.from(newFiles)) {
+            if (!fileQueue.some(q => q.name === f.name && q.size === f.size)) {
+                fileQueue.push(f);
             }
-        }, 2000);
+        }
+        renderFileQueue();
     }
 
     // ── INITIALIZATION & LISTENERS ──
@@ -317,10 +451,17 @@ document.addEventListener('DOMContentLoaded', () => {
         dropZone.addEventListener('drop', e => {
             e.preventDefault();
             dropZone.style.borderColor = '';
-            fileInput.files = e.dataTransfer.files;
-            handleFileSelect();
+            if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                addFilesToQueue(e.dataTransfer.files);
+            }
         });
-        fileInput.addEventListener('change', handleFileSelect);
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files.length) {
+                addFilesToQueue(fileInput.files);
+                // Reset so the same file can be re-selected later if needed
+                fileInput.value = '';
+            }
+        });
     }
 
     if (startIngestBtn) {
@@ -331,39 +472,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 settingsOverlay.classList.add('visible');
                 return;
             }
-            if (!fileInput.files || !fileInput.files[0]) {
+            if (!fileQueue.length) {
                 alert('Please select or drag a file to ingest first.');
                 return;
             }
 
-            const file = fileInput.files[0];
+            const files = [...fileQueue];   // snapshot the queue
             const strategy = document.getElementById('chunk-strategy').value;
-
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('chunking_strategy', strategy);
 
             startIngestBtn.disabled = true;
             ingestLoading.classList.add('visible');
-            resetJobTracker();
 
-            try {
+            const results = await Promise.allSettled(files.map(async file => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('chunking_strategy', strategy);
                 const data = await KEIRO.ingest(formData, namespace);
                 const jobId = data.job_id || data.JobId;
-                if (jobId) {
-                    trackJobStatus(jobId, namespace);
-                } else {
-                    alert('Failed to launch ingest: No Job ID returned.');
-                }
-            } catch (err) {
-                alert(`Ingest API error: ${err.message}`);
-            } finally {
-                startIngestBtn.disabled = false;
-                ingestLoading.classList.remove('visible');
-                // clear file input
-                fileInput.value = '';
-                fileChosenBanner.style.display = 'none';
+                if (!jobId) throw new Error(`No Job ID returned for "${file.name}"`);
+                addJobTracker(jobId, namespace, file.name);
+            }));
+
+            const failed = results.filter(r => r.status === 'rejected');
+            if (failed.length) {
+                alert(`${failed.length} file(s) failed to ingest:\n${failed.map(r => r.reason.message).join('\n')}`);
             }
+
+            startIngestBtn.disabled = false;
+            ingestLoading.classList.remove('visible');
+            // Clear the queue and banner after dispatch
+            fileQueue = [];
+            renderFileQueue();
         });
     }
 
@@ -400,7 +539,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isCached = data.cache_hit !== undefined ? !!data.cache_hit : !!data.CacheHit;
                 const retrievalDetailsVal = data.retrieval_details !== undefined ? data.retrieval_details : data.RetrievalDetails;
 
-                responseContainer.textContent = responseText || 'Empty response received.';
+                responseContainer.innerHTML = '';
+                await streamMarkdownResponse(responseContainer, responseText || 'Empty response received.');
 
                 const tierRaw = retrievalDetailsVal?.retrieval_type || retrievalDetailsVal?.RetrievalType || (isCached ? 'cached' : '—');
                 let tierLabel = 'HYBRID';
@@ -445,13 +585,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             if (telemetryTopK) telemetryTopK.textContent = topK;
                             if (telemetryRerank) {
-                                telemetryRerank.textContent = isRerank !== undefined 
-                                    ? (isRerank ? 'ENABLED (CROSS-ENCODER)' : 'DISABLED') 
+                                telemetryRerank.textContent = isRerank !== undefined
+                                    ? (isRerank ? 'ENABLED (CROSS-ENCODER)' : 'DISABLED')
                                     : '—';
                             }
                             if (telemetryDecompose) {
-                                telemetryDecompose.textContent = isDecompose !== undefined 
-                                    ? (isDecompose ? 'ENABLED (MULTI-HOP)' : 'DISABLED') 
+                                telemetryDecompose.textContent = isDecompose !== undefined
+                                    ? (isDecompose ? 'ENABLED (MULTI-HOP)' : 'DISABLED')
                                     : '—';
                             }
                         }

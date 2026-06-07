@@ -47,8 +47,6 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 
 	mainRouter.Get("/", ServeUIPage("index.html"))
 	mainRouter.Get("/query", ServeUIPage("query.html"))
-	mainRouter.Get("/ingest", ServeUIPage("ingest.html"))
-	mainRouter.Get("/health-ui", ServeUIPage("health.html"))
 
 	mainRouter.Handle("/metrics", promhttp.Handler())
 	mainRouter.Mount("/v1", v1Router)

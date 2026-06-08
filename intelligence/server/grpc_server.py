@@ -118,7 +118,7 @@ class IntelligenceServiceServicer(rag_pb2_grpc.IntelligenceServiceServicer):
         namespace = request.namespace
         chunks = [chunk.text for chunk in request.retrieved_chunk]
 
-        response = self.llm_client.get_response(query, chunks)  # Currently using the gemini llm only because of higher rate limits
+        response = self.llm_client.get_response(query, chunks)
 
         return rag_pb2.GeneratedResponse(
             response = response["response"],
@@ -168,6 +168,7 @@ def serve():
     else:
         embedder = LocalEmbedder()
 
+    llm_provider = os.getenv("KEIRO_LLM_PROVIDER")
     chunk_size = int(os.getenv("KEIRO_CHUNK_SIZE", "1024"))
     overlap = int(os.getenv("KEIRO_OVERLAP", "150"))
 
@@ -175,43 +176,73 @@ def serve():
 
     pipeline = IngestionPipeline(embedder, chunker, store)
 
-    llm_provider = os.getenv("KEIRO_LLM_PROVIDER")
-    if llm_provider == "gemini":
-        model = os.getenv("KEIRO_GEMINI_MODEL_NAME")
-        client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
-        llm_client = GeminiLLM(client = client, model_name = model)
+    if os.getenv("KEIRO_DEPLOYMENT") == "True":
+        if os.getenv("KEIRO_LARGE_GROQ_MODEL") != None and os.getenv("KEIRO_SMALL_GROQ_MODEL") != None:
+            large_model = os.getenv("KEIRO_LARGE_GROQ_MODEL")
+            small_model = os.getenv("KEIRO_SMALL_GROQ_MODEL")
+            client = OpenAI(api_key = os.getenv("GROQ_API_KEY"),
+                                        base_url = os.getenv("GROQ_BASE_URL"))
+            llm_client = OpenaiLLM(client = client, model_name = large_model)
 
-    elif llm_provider == "openai":
-        model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
-        client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
-        llm_client = OpenaiLLM(client = client, model_name = model)
+        else:
+            raise ValueError(f"Unsupported LLM provider: {llm_provider}. Must be 'gemini' or 'openai'")
 
-    elif llm_provider == "ollama":
-        model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
-        model_url = os.getenv("KEIRO_OLLAMA_URL")
-        client = OpenAI(
-            base_url = model_url
-        )
-        llm_client = OpenaiLLM(client = client, model_name = model)
+        simple_retriever = SimpleRetriever(store = store, embedder = embedder)
 
-    else:
-        raise ValueError(f"Unsupported LLM provider: {llm_provider}. Must be 'gemini' or 'openai'")
+        classifier = ClassifyQuery(client = client, model_name = large_model, model_provider = llm_provider)
 
-    simple_retriever = SimpleRetriever(store = store, embedder = embedder)
+        cross_encoder_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
+        cross_encoder = CrossEncoderReranker(cross_encoding_model = cross_encoder_model)
+        complex_retriever = ComplexRetriever(store = store, embedder = embedder, client = client, cross_encoder = cross_encoder, model_name = small_model, mmr_lambda = float(os.getenv("KEIRO_MMR_RETRIEVAL_LAMBDA")), model_provider = llm_provider)
 
-    classifier = ClassifyQuery(client = client, model_name = model, model_provider = llm_provider)
+        multi_hop_retriever = MultiHopRetriever(embedder = embedder, store = store, client = client, model_name = small_model, num_hops = 3, model_provider = llm_provider)
 
-    cross_encoder_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
-    cross_encoder = CrossEncoderReranker(cross_encoding_model = cross_encoder_model)
-    complex_retriever = ComplexRetriever(store = store, embedder = embedder, client = client, cross_encoder = cross_encoder, model_name = model, mmr_lambda = float(os.getenv("KEIRO_MMR_RETRIEVAL_LAMBDA")), model_provider = llm_provider)
+        rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, embedder = embedder, llm_client = llm_client), server)
+        server.add_insecure_port(f"{HOST}:{PORT}")
+        print(f"Starting the server at port {HOST}:{PORT}")
+        server.start()
+        server.wait_for_termination()
 
-    multi_hop_retriever = MultiHopRetriever(embedder = embedder, store = store, client = client, model_name = model, num_hops = 3, model_provider = llm_provider)
+    else :
+        if llm_provider == "gemini":
+            model = os.getenv("KEIRO_GEMINI_MODEL_NAME")
+            client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+            llm_client = GeminiLLM(client = client, model_name = model)
 
-    rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, embedder = embedder, llm_client = llm_client), server)
-    server.add_insecure_port(f"{HOST}:{PORT}")
-    print(f"Starting the server at port {HOST}:{PORT}")
-    server.start()
-    server.wait_for_termination()
+        elif llm_provider == "openai":
+            model = os.getenv("KEIRO_OPENAI_MODEL_NAME")
+            client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+            llm_client = OpenaiLLM(client = client, model_name = model)
+
+        elif llm_provider == "ollama":
+            model = os.getenv("KEIRO_OLLAMA_MODEL_NAME")
+            model_url = os.getenv("KEIRO_OLLAMA_URL")
+            client = OpenAI(
+                base_url = model_url
+            )
+            llm_client = OpenaiLLM(client = client, model_name = model)
+
+        elif os.getenv("KEIRO_LARGE_GROQ_MODEL") != None and os.getenv("KEIRO_SMALL_GROQ_MODEL") != None:
+            model = os.getenv("KEIRO_LARGE_GROQ_MODEL")
+
+        else:
+            raise ValueError(f"Unsupported LLM provider: {llm_provider}. Must be 'gemini' or 'openai'")
+
+        simple_retriever = SimpleRetriever(store = store, embedder = embedder)
+
+        classifier = ClassifyQuery(client = client, model_name = model, model_provider = llm_provider)
+
+        cross_encoder_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
+        cross_encoder = CrossEncoderReranker(cross_encoding_model = cross_encoder_model)
+        complex_retriever = ComplexRetriever(store = store, embedder = embedder, client = client, cross_encoder = cross_encoder, model_name = model, mmr_lambda = float(os.getenv("KEIRO_MMR_RETRIEVAL_LAMBDA")), model_provider = llm_provider)
+
+        multi_hop_retriever = MultiHopRetriever(embedder = embedder, store = store, client = client, model_name = model, num_hops = 3, model_provider = llm_provider)
+
+        rag_pb2_grpc.add_IntelligenceServiceServicer_to_server(IntelligenceServiceServicer(pipeline = pipeline, classifier = classifier, simple_retriever = simple_retriever, complex_retriever = complex_retriever, multi_hop_retriever = multi_hop_retriever, embedder = embedder, llm_client = llm_client), server)
+        server.add_insecure_port(f"{HOST}:{PORT}")
+        print(f"Starting the server at port {HOST}:{PORT}")
+        server.start()
+        server.wait_for_termination()
 
 if __name__ == "__main__":
     serve()

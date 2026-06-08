@@ -132,3 +132,8 @@ benchmarks/rag_response_generator.py
 benchmarks/adaptive_rag_response_generator.py
 Basel_III.pdf
 benchmarks/results/v1
+benchmarks/results/v2
+cloudflare_tunnel_end.sh
+cloudflare_tunnel_start.sh
+benchmarks/cache_benchmark.py
+benchmarks/load_test.go

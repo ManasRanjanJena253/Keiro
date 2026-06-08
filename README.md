@@ -7,10 +7,11 @@
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-vector%20store-FF6B35?style=flat)
 ![Cache](https://img.shields.io/badge/Cache-hashicorp%20LRU-00ADD8?style=flat&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ManasRanjanJena253/Keiro)
 
 > *From Japanese 経路 (keiro) — path, route.*
 
-Keiro is a self-hostable adaptive RAG infrastructure that routes queries through three retrieval tiers based on complexity, reducing token usage on simple queries by up to 49% while improving context recall on multi-hop reasoning tasks. A single `docker compose up` starts the full stack with zero additional configuration beyond environment variables.
+Keiro is a self-hostable adaptive RAG infrastructure that routes queries through three retrieval tiers based on complexity, improving context recall on complex and multi-hop queries — validated across three independent LLM judges on 180 questions from the EU AI Act. A single `docker compose up` starts the full stack with zero additional configuration beyond environment variables.
 
 ---
 
@@ -135,7 +136,7 @@ Rate limiting is a `sync.Map` of namespace to `golang.org/x/time/rate` token buc
 
 ## Benchmark Results
 
-Evaluated on 50 questions across three complexity tiers derived from the EU AI Act (EUR-Lex 2024/1689). Two independent LLM judges scored each response on faithfulness, context recall, and context precision against reference answers generated from the full document text.
+Evaluated on 180 questions across three complexity tiers (n=76/68/36 per tier) derived from the EU AI Act (EUR-Lex 2024/1689). Three independent LLM judges (Claude Sonnet 4.6, Deepseek, Gemini 2.5 Pro) scored each response on faithfulness, context recall, and context precision against reference answers generated from the full document text. Failures (no answer returned) are excluded from quality metrics for a fair comparison.
 
 **Baseline:** Naive RAG — fixed top-5 retrieval, no classification, no reranking, no caching.
 
@@ -143,53 +144,75 @@ Evaluated on 50 questions across three complexity tiers derived from the EU AI A
 
 ![Figure 1: Overall metric comparison](benchmarks/results/fig1_overall_metrics.png)
 
-*Naive RAG (blue) vs. Adaptive RAG (red) scored by two independent judges. Adaptive RAG shows improved context recall (+2.2pp overall, +9.4pp on multi-hop queries per Claude judge).*
+*Naive RAG (blue) vs. Adaptive RAG (red) scored by three independent LLM judges (n=142–155 answerable pairs per judge, failures excluded). Deepseek and Gemini 2.5 Pro judges show consistent context recall gains (+4.1pp and +3.5pp respectively); Claude Sonnet 4.6 shows marginal improvement (+0.6pp). Faithfulness improves under Deepseek (+3.5pp) and Gemini (+1.7pp) judges.*
 
-### Per-tier breakdown — Claude Sonnet 4.6 judge
+### Per-tier breakdown — Deepseek judge
 
-![Figure 2: Per-tier metrics, Claude judge](benchmarks/results/fig2_per_tier_claude_judge.png)
+![Figure 2: Per-tier metrics, Deepseek judge](benchmarks/results/fig2_per_tier_deepseek_judge.png)
+
+*Adaptive RAG improves context recall on complex (+5.4pp) and multi-hop (+6.1pp) tiers. Faithfulness gains are most pronounced on multi-hop (+6.1pp), consistent with iterative retrieval assembling a richer evidence chain.*
 
 ### Per-tier breakdown — Gemini 2.5 Pro judge
 
 ![Figure 3: Per-tier metrics, Gemini judge](benchmarks/results/fig3_per_tier_gemini_judge.png)
 
-*Gemini scores higher overall due to known leniency differences between frontier judges. Both judges agree on the directional finding: context recall improves on multi-hop queries, faithfulness trades off slightly on complex queries routed to multi-hop retrieval.*
+*Gemini 2.5 Pro scores higher in absolute terms due to known leniency differences between frontier judges. Both Deepseek and Gemini agree on the directional finding: context recall improves on complex (+4.9pp) and multi-hop (+4.0pp) queries. A precision cost is visible on the simple tier (−2.9pp), attributable to classifier over-routing simple queries to multi-hop retrieval.*
+
+### Retrieval failure rates
+
+![Figure 5: Retrieval failure rate by tier](benchmarks/results/fig5_failure_rates.png)
+
+*Adaptive RAG has a higher failure rate on simple queries (25% vs. 17%) due to the classifier over-routing simple queries to multi-hop retrieval, which is more likely to return no answer. On complex and multi-hop tiers, failure rates are comparable or better (complex: 10% vs. 12%; multi-hop: 8% vs. 8%).*
 
 ### Score delta heatmap (Adaptive − Naive)
 
-![Figure 5: Delta heatmap](benchmarks/results/fig5_delta_heatmap.png)
+![Figure 6: Delta heatmap](benchmarks/results/fig6_delta_heatmap.png)
 
-*Green = Adaptive RAG better. Red = Naive RAG better. Context recall is the consistent win. The faithfulness cost concentrates in the complex tier where classifier over-routing to multi-hop is the known limitation.*
+*Green = Adaptive RAG better. Red = Naive RAG better. Deepseek shows the strongest gains — up to +6.1pp on multi-hop faithfulness and recall. Gemini shows consistent recall improvements across all tiers but a precision cost on the simple tier (−2.9pp), corroborating the over-routing failure mode. Claude Sonnet 4.6 is largely flat, with context recall at +0.0pp on complex and near-zero on simple.*
 
 ### Token efficiency
 
 ![Figure 4: Token usage by tier](benchmarks/results/fig4_token_usage.png)
 
-*Simple queries use 744 tokens on average versus 1,448 for Naive RAG — a 49% reduction. Complex and multi-hop queries intentionally use more tokens because they retrieve more context. Compute is allocated proportionally to query difficulty.*
+*Adaptive RAG uses more tokens across all tiers due to classifier overhead and richer retrieval: +17% on simple (1,568 → 1,842), +39% on complex (1,506 → 2,096), and +27% on multi-hop (1,510 → 1,920). Token cost is the measurable tradeoff for improved context recall on complex and multi-hop queries.*
 
 ### Classifier routing accuracy
 
-![Figure 6: Routing accuracy](benchmarks/results/fig6_routing_accuracy.png)
+![Figure 7: Routing accuracy](benchmarks/results/fig7_routing_accuracy.png)
 
-*Simple queries are classified with perfect accuracy (100%). Complex queries
-are correctly routed 60% of the time, with the remaining 40% over-routed to
-multi-hop. Multi-hop queries are the hardest to classify reliably (10%), as
-chained reasoning questions sit close to complex synthesis questions in
-semantic space and are frequently conflated. Over-routing to complex is the
-safer failure mode — it over-retrieves with reranking rather than
-under-retrieves.*
+*Simple queries are classified with perfect accuracy (100%). Complex queries are correctly routed 60% of the time, with the remaining 40% likely over-routed to multi-hop. Multi-hop queries are the hardest to classify reliably (1/10), as chained reasoning questions sit close to complex synthesis questions in semantic space and are frequently conflated. Over-routing to multi-hop is the dangerous failure mode — as confirmed by Fig 5, it is the primary driver of the elevated 25% failure rate on the simple tier.*
+
+### Semantic cache threshold analysis
+
+![Figure 8: Cache threshold sweep](benchmarks/results/fig8_cache_threshold_sweep.png)
+
+*At the default threshold of 0.92, 1 out of 52 unique queries resulted in a cache hit (1.9%), confirming the benchmark dataset is near-duplicate-free. The sweep illustrates that lowering the threshold to ~0.85 would substantially increase cache hit rate on near-paraphrase queries, at the cost of occasionally serving semantically adjacent but non-identical answers. The 0.92 default is appropriate for high-precision deployments.*
 
 ### Summary
 
-| Finding | Claude judge | Gemini judge |
-|---------|-------------|--------------|
-| Context recall Δ (overall) | +2.2pp | −0.8pp |
-| Context recall Δ (multi-hop) | **+9.4pp** | **+6.7pp** |
-| Faithfulness Δ (overall) | −10.4pp | −7.7pp |
-| Token reduction (simple tier) | **−49%** | **−49%** |
-| Classifier accuracy (simple)    | 100%  | 100%  |
-| Classifier accuracy (complex)   | 60%   | 60%   |
-| Classifier accuracy (multi-hop) | 10%   | 10%   |
+**Quality metrics by judge (failures excluded)**
+
+| Finding | Claude Sonnet 4.6 | Deepseek | Gemini 2.5 Pro |
+|---------|-------------------|----------|----------------|
+| Context recall Δ (overall) | +0.6pp | **+4.1pp** | **+3.5pp** |
+| Context recall Δ (multi-hop) | +2.0pp | **+6.1pp** | **+4.0pp** |
+| Context recall Δ (complex) | +0.0pp | **+5.4pp** | **+4.9pp** |
+| Faithfulness Δ (overall) | −0.4pp | **+3.5pp** | **+1.7pp** |
+
+**System-level metrics (judge-independent)**
+
+| Finding | Value |
+|---------|-------|
+| Token overhead — simple tier | +17% (1,568 → 1,842) |
+| Token overhead — complex tier | +39% (1,506 → 2,096) |
+| Token overhead — multi-hop tier | +27% (1,510 → 1,920) |
+| Classifier accuracy — simple | 100% (20/20) |
+| Classifier accuracy — complex | 60% (12/20) |
+| Classifier accuracy — multi-hop | 10% (1/10) |
+| Failure rate Δ — simple tier | +8pp (17% → 25%) |
+| Failure rate Δ — complex tier | −2pp (12% → 10%) |
+| Failure rate Δ — multi-hop tier | 0pp (8% → 8%) |
+| Cache hit rate (threshold 0.92) | 1.9% (1/52) |
 
 ---
 

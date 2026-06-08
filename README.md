@@ -11,7 +11,7 @@
 
 > *From Japanese 経路 (keiro) — path, route.*
 
-Keiro is a self-hostable adaptive RAG infrastructure that routes queries through three retrieval tiers based on complexity, improving context recall on complex and multi-hop queries — validated across three independent LLM judges on 180 questions from the EU AI Act. A single `docker compose up` starts the full stack with zero additional configuration beyond environment variables.
+Keiro is a self-hostable adaptive RAG infrastructure that routes queries through three retrieval tiers based on complexity, improving context recall on complex and multi-hop queries — validated across three independent LLM judges on 180 questions across the EU AI Act and Basel III framework. A single `docker compose up` starts the full stack with zero additional configuration beyond environment variables.
 
 ---
 
@@ -158,6 +158,12 @@ Evaluated on 180 questions across three complexity tiers (n=76/68/36 per tier) d
 
 *Gemini 2.5 Pro scores higher in absolute terms due to known leniency differences between frontier judges. Both Deepseek and Gemini agree on the directional finding: context recall improves on complex (+4.9pp) and multi-hop (+4.0pp) queries. A precision cost is visible on the simple tier (−2.9pp), attributable to classifier over-routing simple queries to multi-hop retrieval.*
 
+### Token efficiency
+
+![Figure 4: Token usage by tier](benchmarks/results/fig4_token_usage.png)
+
+*Adaptive RAG uses more tokens across all tiers due to classifier overhead and richer retrieval: +17% on simple (1,568 → 1,842), +39% on complex (1,506 → 2,096), and +27% on multi-hop (1,510 → 1,920). Token cost is the measurable tradeoff for improved context recall on complex and multi-hop queries.*
+
 ### Retrieval failure rates
 
 ![Figure 5: Retrieval failure rate by tier](benchmarks/results/fig5_failure_rates.png)
@@ -169,12 +175,6 @@ Evaluated on 180 questions across three complexity tiers (n=76/68/36 per tier) d
 ![Figure 6: Delta heatmap](benchmarks/results/fig6_delta_heatmap.png)
 
 *Green = Adaptive RAG better. Red = Naive RAG better. Deepseek shows the strongest gains — up to +6.1pp on multi-hop faithfulness and recall. Gemini shows consistent recall improvements across all tiers but a precision cost on the simple tier (−2.9pp), corroborating the over-routing failure mode. Claude Sonnet 4.6 is largely flat, with context recall at +0.0pp on complex and near-zero on simple.*
-
-### Token efficiency
-
-![Figure 4: Token usage by tier](benchmarks/results/fig4_token_usage.png)
-
-*Adaptive RAG uses more tokens across all tiers due to classifier overhead and richer retrieval: +17% on simple (1,568 → 1,842), +39% on complex (1,506 → 2,096), and +27% on multi-hop (1,510 → 1,920). Token cost is the measurable tradeoff for improved context recall on complex and multi-hop queries.*
 
 ### Classifier routing accuracy
 
@@ -285,11 +285,18 @@ client = KeiroClient(
 )
 
 job_id = client.ingest("document.pdf")
-client.wait_for_ingestion(job_id)
+
+# Poll until ingestion completes
+import time
+while True:
+    status = client.job_status(job_id)
+    if status.status in ("complete", "failed"):
+        break
+    time.sleep(1)
 
 response = client.query("What are the main compliance obligations?")
-print(response.answer)
-print(f"Strategy: {response.retrieval_strategy}")
+print(response.response)
+print(f"Strategy: {response.retrieval_details.tier_name}")
 print(f"Cache hit: {response.cache_hit}")
 ```
 

@@ -180,7 +180,7 @@ Evaluated on 180 questions across three complexity tiers (n=76/68/36 per tier) d
 
 ![Figure 7: Routing accuracy](benchmarks/results/fig7_routing_accuracy.png)
 
-*Simple queries are classified with perfect accuracy (100%). Complex queries are correctly routed 60% of the time, with the remaining 40% likely over-routed to multi-hop. Multi-hop queries are the hardest to classify reliably (1/10), as chained reasoning questions sit close to complex synthesis questions in semantic space and are frequently conflated. Over-routing to multi-hop is the dangerous failure mode — as confirmed by Fig 5, it is the primary driver of the elevated 25% failure rate on the simple tier.*
+*Simple queries are classified with poor accuracy — only 12/52 (23%) are correctly routed, with the vast majority misrouted to the Complex tier. Complex queries are the best-handled tier, correctly routed 44/52 (85%) of the time, with consistent performance across both documents (EU AI Act: 85%, Basel III: 85%). Multi-hop queries are the hardest to classify reliably (3/24, 12%), as chained reasoning questions sit close to complex synthesis questions in semantic space and are frequently conflated into the Complex tier. Over-routing to Complex is the dangerous failure mode for simple queries — the Simple tier bar is dominated by orange (Misrouted → Complex), making it the primary driver of the low 23% accuracy on the simple tier.*
 
 ### Semantic cache threshold analysis
 

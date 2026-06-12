@@ -8,6 +8,7 @@
 ![Cache](https://img.shields.io/badge/Cache-hashicorp%20LRU-00ADD8?style=flat&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ManasRanjanJena253/Keiro)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20639902.svg)](https://doi.org/10.5281/zenodo.20639902)
 
 > *From Japanese 経路 (keiro) — path, route.*
 

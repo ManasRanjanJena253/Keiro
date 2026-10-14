@@ -137,3 +137,4 @@ cloudflare_tunnel_end.sh
 cloudflare_tunnel_start.sh
 benchmarks/cache_benchmark.py
 benchmarks/load_test.go
+generated

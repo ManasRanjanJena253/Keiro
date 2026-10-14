@@ -2,7 +2,7 @@ syntax="proto3";
 
 package keiro.v1;
 
-option go_package = "github.com/ManasRanjanJena253/Keiro/generated/go;rag";
+option go_package = "github.com/ManasRanjanJena253/Keiro/generated/go/proto;rag";
 enum QueryType{
   QUERY_TYPE_UNSPECIFIED = 0;
   SIMPLE = 1;

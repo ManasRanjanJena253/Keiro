@@ -43,7 +43,8 @@ func NewRouter(envVar *config.Config, intelClient pb.IntelligenceServiceClient, 
 	v1Router.Post("/ingest", ingestHandler.IngestUserDoc)
 	v1Router.Get("/jobs/{job_id}", jobHandler.UserJobHandler)
 
-	mainRouter.Handle("/static/*", http.StripPrefix("/static", StaticFileHandler()))
+	fileServer := http.FileServer(http.Dir("static"))
+	mainRouter.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 	mainRouter.Get("/", ServeUIPage("index.html"))
 	mainRouter.Get("/query", ServeUIPage("query.html"))
